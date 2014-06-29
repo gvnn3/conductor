@@ -1,0 +1,39 @@
+* Distributed Testing
+
+WRiting a crap ton of shell scripts makes no sense.  Better to build
+(or grab, but I can't find) something that will do what I want.
+
+Conductor is a distributed system test framework, written in Python,
+that can be used to coordinate a set of tests among a set of clients.
+
+The system consists of a single conductor and a set of players.  THe
+players run on the clients and read commands over a network channel
+and execute them.
+
+The conductor reads test descriptions from a confiugration file,
+written using Python's config parser, and executes the tests on the
+players.
+
+The tests are executed in Phases.  A Phase contains a set of internal
+or external (shell/program) commands that are executed in order, per
+client.  Phases are named and are executed based on their names in the
+Test.  Names are abritrary but can obviously follow a pattern such as:
+ Setup->Run->Collect->Reset
+
+We need a concept of sync points as well (or just delay() for now)
+
+Each Test has a trials memeber that ssays how many times to execute
+the same test.  The test name and trial number are used to generate a
+particular output file.
+
+To some extend "Multimechanize" could be taken as a model but like
+most other test framework it depends on a single master machine and
+then a lot of threads, which is not quite what we want.
+
+Need to handle timeouts.
+
+Each file MUST have one Test.
+Each Test MUST have one Phase.
+Each Phase MUST have one Step.
+
+* Config Example
