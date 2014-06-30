@@ -81,12 +81,12 @@ def __main__():
 
     test.append(reset)
 
-    for foo in test:
-        print(type(foo))
-        sock = socket.create_connection((host, port))
-        splat = pickle.dumps(foo,pickle.HIGHEST_PROTOCOL)
-        sock.sendall(splat)
-        sock.close()
+    for trial in range(int(defaults['trials'])):
+        for foo in test:
+            sock = socket.create_connection((host, port))
+            splat = pickle.dumps(foo,pickle.HIGHEST_PROTOCOL)
+            sock.sendall(splat)
+            sock.close()
 
 if __name__ == "__main__":
     __main__()
