@@ -36,39 +36,57 @@
 # "system" imports
 import socket
 import pickle
+import configparser
+import sys
 
 # local imports
-import test
 import phase
 import step
 
 def __main__():
 
-    host = '127.0.0.1'
-    port = 5555
     test = []
+    config = configparser.ConfigParser()
+    config.read(sys.argv[1]) # Cheap and sleazy for now
+
+    defaults = config['Master']
+    host = defaults['host']
+    port = int(defaults['port'])
+
+    startup = phase.Phase()
+
+    for i in config['Startup']:
+        startup.append(step.Step(config['Startup'][i]))
+
+    test.append(startup)
+
+    run = phase.Phase()
     
-    sock = socket.create_connection((host, port))
-    
-    step1 = step.Step("ifconfig en0 192.168.1.1")
-    step2 = step.Step("echo 'this is a test too'")
+    for i in config['Run']:
+        run.append(step.Step(config['Run'][i]))
 
-    phase1 = phase.Phase()
+    test.append(run)
 
-    phase1.append(step1)
-    phase1.append(step2)
-    phase1.append(step1)
-    phase1.append(step1)
-    phase1.append(step1)
-    phase1.append(step1)
-    phase1.append(step1)
-    phase1.append(step1)
+    collect = phase.Phase()
+        
+    for i in config['Collect']:
+        collect.append(step.Step(config['Collect'][i]))
 
-    splat = pickle.dumps(phase1,pickle.HIGHEST_PROTOCOL)
+    test.append(collect)
 
-    sock.sendall(splat)
+    reset = phase.Phase()
+        
+    for i in config['Reset']:
+        reset.append(step.Step(config['Reset'][i]))
 
-    sock.close()
+    test.append(reset)
+
+    for foo in test:
+        print(type(foo))
+        sock = socket.create_connection((host, port))
+        splat = pickle.dumps(foo,pickle.HIGHEST_PROTOCOL)
+        sock.sendall(splat)
+        sock.close()
 
 if __name__ == "__main__":
     __main__()

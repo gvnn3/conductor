@@ -39,8 +39,6 @@ import shlex
 
 class Step():
 
-    args = []
-
     def __init__(self, command, result = ""):
         self.args = shlex.split(command)
 
