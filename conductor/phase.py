@@ -34,9 +34,11 @@
 # by the Client when asked by the Conductor.
 
 class Phase():
+    """Each Phase contains one, or more, steps."""
 
-    steps = []
-    
+    def __init__(self):
+        self.steps = []
+
     def load(self):
         """Load a set of Steps into the list to be run"""
         pass

@@ -33,14 +33,36 @@
 # Description: The Player listens on a well known port and executes
 # commands as they are passed in, returning the reults up the pipe.
 
+import socket
+import pickle
+import pickletools
+
+import step
+import phase
+
 class Player():
 
-    def __init__(port, key = None):
-        pass
+    done = False
+    sock = None
+    
+    def __init__(self, address, port, key = None):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+        self.sock.bind((address,port))
+        self.sock.listen(5)
+
+    def run(self):
+        while not self.done:
+            sock,addr = self.sock.accept()
+            data = sock.recv(65536)
+            sock.close()
+            phase1 = pickle.loads(data)
+            phase1.run()
 
 
 def __main__():
 
-
-__main__()
+    play = Player('127.0.0.1', 5555)
+    play.run()
     
+if __name__ == "__main__":
+    __main__()

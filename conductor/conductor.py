@@ -30,18 +30,45 @@
 #
 # Author: George V. Neville-Neil
 #
-# Description: Top level object in the Conductor system.  Encodes all
-# the logic of getting the config file loaded and the clients setup.
+# Description: Main program for conductor.  Reads the config, starts
+# the players, parcels out the work, collects the results.
 
-class Test():
+# "system" imports
+import socket
+import pickle
 
-    phases = []
+# local imports
+import test
+import phase
+import step
 
-    def __init__(self):
-        pass
+def __main__():
 
-    def append(self, phase):
-        self.phases.append(phase)
+    host = '127.0.0.1'
+    port = 5555
+    test = []
+    
+    sock = socket.create_connection((host, port))
+    
+    step1 = step.Step("ifconfig en0 192.168.1.1")
+    step2 = step.Step("echo 'this is a test too'")
 
-        
-        
+    phase1 = phase.Phase()
+
+    phase1.append(step1)
+    phase1.append(step2)
+    phase1.append(step1)
+    phase1.append(step1)
+    phase1.append(step1)
+    phase1.append(step1)
+    phase1.append(step1)
+    phase1.append(step1)
+
+    splat = pickle.dumps(phase1,pickle.HIGHEST_PROTOCOL)
+
+    sock.sendall(splat)
+
+    sock.close()
+
+if __name__ == "__main__":
+    __main__()

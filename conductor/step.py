@@ -46,9 +46,12 @@ class Step():
 
     def run(self):
         try:
-            subprocess.check_call(self.args)
+            output = subprocess.check_output(self.args)
         except subprocess.CalledProcessError as err:
-            printf("%d %s %s\n", err.returncode, err.cmd, err.output)
+            print ("Code: ", err.returncode, "Command: ", err.cmd,
+                   "Output: ", err.output)
+        else:
+            print ("Success: ", output)
             
     def ready(self):
         """Tell the server we're ready to go."""
