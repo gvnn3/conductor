@@ -39,29 +39,34 @@ import pickletools
 
 import step
 import phase
+import retval
 
 class Player():
 
     done = False
     sock = None
     
-    def __init__(self, address, port, key = None):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-        self.sock.bind((address,port))
-        self.sock.listen(5)
+    def __init__(self, command, results, key = None):
+        self.cmdsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+        self.cmdsock.bind(command)
+        self.cmdsock.listen(5)
+        self.ressock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+        self.ressock.bind(results)
+        self.ressock.listen(5)
 
     def run(self):
         while not self.done:
-            sock,addr = self.sock.accept()
+            sock,addr = self.cmdsock.accept()
             data = sock.recv(65536)
+            message = pickle.loads(data)
+            if type(message) == phase.Phase:
+                message.run(sock)
             sock.close()
-            phase1 = pickle.loads(data)
-            phase1.run()
 
 
 def __main__():
 
-    play = Player('127.0.0.1', 5555)
+    play = Player(('127.0.0.1', 5555),('127.0.0.1', 5556))
     play.run()
     
 if __name__ == "__main__":

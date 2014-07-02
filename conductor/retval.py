@@ -30,41 +30,17 @@
 #
 # Author: George V. Neville-Neil
 #
-# Description: A step allows us to encapsulate a command and work with
-# it, including recording the errors and the like that we might get
-# back from it.
+# Description: A return code object that can be pickled and sent back
+# to the conductor.
 
-import subprocess
-import shlex
+import pickle
 
-import retval
+class RetVal():
 
-class Step():
+    def __init__(self, code = 0, message = ""):
+        self.code = code
+        self.message = message
 
-    def __init__(self, command, result = ""):
-        self.args = shlex.split(command)
-
-    def run(self, ressock):
-        try:
-            output = subprocess.check_output(self.args)
-        except subprocess.CalledProcessError as err:
-            print ("Code: ", err.returncode, "Command: ", err.cmd,
-                   "Output: ", err.output)
-            ret = retval.RetVal(err.returncode, err.cmd)
-            ret.send(ressock)
-        else:
-            print ("Success: ", output)
-            ret = retval.RetVal(0, output)
-            ret.send(ressock)
-            
-    def ready(self):
-        """Tell the server we're ready to go."""
-        pass
-
-    def wait(self):
-        """Wait on the server"""
-        pass
-
-    def wait(self, until):
-        """Wait until time specified"""
-        pass
+    def send(self, sock):
+        s = pickle.dumps(self)
+        sock.sendall(s)

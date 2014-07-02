@@ -42,6 +42,7 @@ import sys
 # local imports
 import phase
 import step
+import retval
 
 def __main__():
 
@@ -51,7 +52,8 @@ def __main__():
 
     defaults = config['Master']
     host = defaults['host']
-    port = int(defaults['port'])
+    cmdport = int(defaults['cmdport'])
+    resport = int(defaults['resultsport'])
 
     startup = phase.Phase()
 
@@ -81,12 +83,18 @@ def __main__():
 
     test.append(reset)
 
+    results = socket.create_connection((host, resport))
+
     for trial in range(int(defaults['trials'])):
         for foo in test:
-            sock = socket.create_connection((host, port))
+            cmd = socket.create_connection((host, cmdport))
+            cmd.settimeout(1.0)
             splat = pickle.dumps(foo,pickle.HIGHEST_PROTOCOL)
-            sock.sendall(splat)
-            sock.close()
+            cmd.sendall(splat)
+            message = cmd.recv(65536)
+            ret = pickle.loads(message)
+            print(ret.code, ret.message)
+            cmd.close()
 
 if __name__ == "__main__":
     __main__()

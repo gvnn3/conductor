@@ -46,8 +46,8 @@ class Phase():
     def append(self, step):
         self.steps.append(step)
 
-    def run(self):
+    def run(self, ressock):
         """Execute all the steps"""
         for step in self.steps:
-            step.run()
+            step.run(ressock)
 
