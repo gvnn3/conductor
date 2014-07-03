@@ -37,36 +37,57 @@ import socket
 import pickle
 import pickletools
 
-import step
+import config
 import phase
+import step
 import retval
+import run
 
 class Player():
 
     done = False
     sock = None
+    config = None
+    phases = []
+    results = []
     
-    def __init__(self, command, results, key = None):
+    def __init__(self, command, key = None):
         self.cmdsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
         self.cmdsock.bind(command)
         self.cmdsock.listen(5)
-        self.ressock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-        self.ressock.bind(results)
-        self.ressock.listen(5)
-
+        
     def run(self):
+        """Run through our work queue"""
         while not self.done:
             sock,addr = self.cmdsock.accept()
             data = sock.recv(65536)
             message = pickle.loads(data)
-            if type(message) == phase.Phase:
-                message.run(sock)
+            if type(message) == config.Config:
+                self.config = message
+                ret = retval.RetVal(retval.RETVAL_OK,
+                                    "config received")
+                ret.send(sock)
+            elif type(message) == phase.Phase:
+                self.phases.append(message)
+                ret = retval.RetVal(retval.RETVAL_OK,
+                                    "phase received")
+                ret.send(sock)
+            elif type(message) == run.Run:
+                print ("RUN")
+                for next in self.phases:
+                    next.run()
+                    next.return_results()
+                self.phases = []
+            else:
+                ret = retval.RetVal(retval.RETVAL_BAD_CMD,
+                                    "no such command")
+                ret.send(sock)
             sock.close()
 
 
 def __main__():
 
-    play = Player(('127.0.0.1', 5555),('127.0.0.1', 5556))
+    play = Player(('127.0.0.1', 5555))
     play.run()
     
 if __name__ == "__main__":

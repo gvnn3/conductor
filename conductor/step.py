@@ -44,18 +44,17 @@ class Step():
     def __init__(self, command, result = ""):
         self.args = shlex.split(command)
 
-    def run(self, ressock):
+    def run(self):
         try:
             output = subprocess.check_output(self.args)
         except subprocess.CalledProcessError as err:
             print ("Code: ", err.returncode, "Command: ", err.cmd,
                    "Output: ", err.output)
             ret = retval.RetVal(err.returncode, err.cmd)
-            ret.send(ressock)
         else:
             print ("Success: ", output)
             ret = retval.RetVal(0, output)
-            ret.send(ressock)
+        return ret
             
     def ready(self):
         """Tell the server we're ready to go."""

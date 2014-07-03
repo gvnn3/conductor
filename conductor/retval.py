@@ -35,6 +35,11 @@
 
 import pickle
 
+RETVAL_OK=	0
+RETVAL_ERROR=	1
+RETVAL_BAD_CMD=	2
+RETVAL_DONE =	 65535
+
 class RetVal():
 
     def __init__(self, code = 0, message = ""):

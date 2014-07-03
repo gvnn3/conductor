@@ -43,58 +43,74 @@ import sys
 import phase
 import step
 import retval
+import run
 
 def __main__():
 
-    test = []
-    config = configparser.ConfigParser()
-    config.read(sys.argv[1]) # Cheap and sleazy for now
+    phases = []
+    local_config = configparser.ConfigParser()
+    local_config.read(sys.argv[1]) # Cheap and sleazy for now
 
-    defaults = config['Master']
+    defaults = local_config['Master']
     host = defaults['host']
     cmdport = int(defaults['cmdport'])
     resport = int(defaults['resultsport'])
 
-    startup = phase.Phase()
+    ressock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+    ressock.bind((host,resport))
+    ressock.listen(5)
 
-    for i in config['Startup']:
-        startup.append(step.Step(config['Startup'][i]))
+    startup = phase.Phase(host, resport)
+    for i in local_config['Startup']:
+        startup.append(step.Step(local_config['Startup'][i]))
+    phases.append(startup)
 
-    test.append(startup)
+    run_phase = phase.Phase(host, resport)
+    for i in local_config['Run']:
+        run_phase.append(step.Step(local_config['Run'][i]))
+    phases.append(run_phase)
 
-    run = phase.Phase()
-    
-    for i in config['Run']:
-        run.append(step.Step(config['Run'][i]))
+    collect = phase.Phase(host, resport)
+    for i in local_config['Collect']:
+        collect.append(step.Step(local_config['Collect'][i]))
+    phases.append(collect)
 
-    test.append(run)
-
-    collect = phase.Phase()
-        
-    for i in config['Collect']:
-        collect.append(step.Step(config['Collect'][i]))
-
-    test.append(collect)
-
-    reset = phase.Phase()
-        
-    for i in config['Reset']:
-        reset.append(step.Step(config['Reset'][i]))
-
-    test.append(reset)
-
-    results = socket.create_connection((host, resport))
+    reset = phase.Phase(host, resport)
+    for i in local_config['Reset']:
+        reset.append(step.Step(local_config['Reset'][i]))
+    phases.append(reset)
 
     for trial in range(int(defaults['trials'])):
-        for foo in test:
+        # Send our phases down
+        for nextphase in phases:
             cmd = socket.create_connection((host, cmdport))
             cmd.settimeout(1.0)
-            splat = pickle.dumps(foo,pickle.HIGHEST_PROTOCOL)
+            splat = pickle.dumps(nextphase,pickle.HIGHEST_PROTOCOL)
             cmd.sendall(splat)
             message = cmd.recv(65536)
-            ret = pickle.loads(message)
-            print(ret.code, ret.message)
+            if (len(message) > 0):
+                ret = pickle.loads(message)
+                print(ret.code, ret.message)
             cmd.close()
+            # Run our phase
+            cmd = socket.create_connection((host, cmdport))
+            cmd.settimeout(1.0)
+            splat = pickle.dumps(run.Run(),pickle.HIGHEST_PROTOCOL)
+            cmd.sendall(splat)
+            cmd.close()
+            done = False
+            # Collect results
+            while not done:
+                sock,addr = ressock.accept()
+                data = sock.recv(65536)
+                message = pickle.loads(data)
+                if type(message) == retval.RetVal:
+                    if message.code == retval.RETVAL_DONE:
+                        print ("done")
+                        done = True
+                    else:
+                        print (message.code, message.message)
+                sock.close()
 
 if __name__ == "__main__":
     __main__()

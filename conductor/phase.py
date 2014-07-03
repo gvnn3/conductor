@@ -33,12 +33,18 @@
 # Description: A Phase object encapsulates a set of Steps to be taken
 # by the Client when asked by the Conductor.
 
+import socket
+import retval
+
 class Phase():
     """Each Phase contains one, or more, steps."""
 
-    def __init__(self):
+    def __init__(self, resulthost, resultport):
+        self.resulthost = resulthost
+        self.resultport = resultport
         self.steps = []
-
+        self.results = []
+        
     def load(self):
         """Load a set of Steps into the list to be run"""
         pass
@@ -46,8 +52,22 @@ class Phase():
     def append(self, step):
         self.steps.append(step)
 
-    def run(self, ressock):
+    def run(self):
         """Execute all the steps"""
         for step in self.steps:
-            step.run(ressock)
+            ret = step.run()
+            self.results.append(ret)
 
+    def return_results(self):
+        """Return the results of the steps"""
+        for result in self.results:
+            ressock = socket.create_connection((self.resulthost,
+                                                    self.resultport))
+            result.send(ressock)
+            ressock.close()
+        ressock = socket.create_connection((self.resulthost,
+                                            self.resultport))
+        ret = retval.RetVal(retval.RETVAL_DONE, "phases complete")
+        ret.send(ressock)
+        ressock.close()
+        

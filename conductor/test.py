@@ -35,10 +35,8 @@
 
 class Test():
 
-    phases = []
-
     def __init__(self):
-        pass
+        self.phases = []
 
     def append(self, phase):
         self.phases.append(phase)
