@@ -45,6 +45,7 @@ import retval
 class Client():
 
     def __init__(self, config):
+        """Load up all the config data, including all phases"""
         master = config['Master']
         self.host = master['host']
         self.cmdport = int(master['cmdport'])
@@ -67,6 +68,7 @@ class Client():
             self.reset_phase.append(step.Step(config['Reset'][i]))
 
     def download(self, current):
+        """Send a phase down to the player"""
         cmd = socket.create_connection((self.host, self.cmdport))
         cmd.settimeout(1.0)
         splat = pickle.dumps(current,pickle.HIGHEST_PROTOCOL)
@@ -78,6 +80,7 @@ class Client():
         cmd.close()
         
     def doit(self):
+        """Tell the remote player to execute the current phase"""
         cmd = socket.create_connection((self.host, self.cmdport))
         cmd.settimeout(1.0)
         splat = pickle.dumps(run.Run(),pickle.HIGHEST_PROTOCOL)
@@ -91,6 +94,7 @@ class Client():
         self.ressock.listen(5)
         
     def results(self):
+        """Retrieve all the results from the player for the current phase"""x
         done = False
         while not done:
             sock,addr = self.ressock.accept()
@@ -106,14 +110,18 @@ class Client():
         self.ressock.close()
 
     def startup(self):
+        """Push the startup phase to the player"""
         self.download(self.startup_phase)
         
     def run(self):
+        """Push the run phase to the player"""
         self.download(self.run_phase)
         
     def collect(self):
+        """Push the collection phase to the player"""
         self.download(self.collect_phase)
 
     def reset(self):
+        """Push the rset phase to the player"""
         self.download(self.collect_phase)
 
