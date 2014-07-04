@@ -95,7 +95,6 @@ def __main__():
     local_config.read(sys.argv[1]) # Cheap and sleazy for now
 
     defaults = local_config['Master']
-    host = defaults['host']
     cmdport = int(defaults['cmdport'])
 
     play = Player(('0.0.0.0', cmdport))

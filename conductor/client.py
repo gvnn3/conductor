@@ -47,29 +47,30 @@ class Client():
     def __init__(self, config):
         """Load up all the config data, including all phases"""
         master = config['Master']
-        self.host = master['host']
+        self.conductor = master['conductor']
+        self.player = master['player']
         self.cmdport = int(master['cmdport'])
         self.resultport = int(master['resultsport'])
 
-        self.startup_phase = phase.Phase(self.host, self.resultport)
+        self.startup_phase = phase.Phase(self.conductor, self.resultport)
         for i in config['Startup']:
             self.startup_phase.append(step.Step(config['Startup'][i]))
 
-        self.run_phase = phase.Phase(self.host, self.resultport)
+        self.run_phase = phase.Phase(self.conductor, self.resultport)
         for i in config['Run']:
             self.run_phase.append(step.Step(config['Run'][i]))
 
-        self.collect_phase = phase.Phase(self.host, self.resultport)
+        self.collect_phase = phase.Phase(self.conductor, self.resultport)
         for i in config['Collect']:
             self.collect_phase.append(step.Step(config['Collect'][i]))
         
-        self.reset_phase = phase.Phase(self.host, self.resultport)
+        self.reset_phase = phase.Phase(self.conductor, self.resultport)
         for i in config['Reset']:
             self.reset_phase.append(step.Step(config['Reset'][i]))
 
     def download(self, current):
         """Send a phase down to the player"""
-        cmd = socket.create_connection((self.host, self.cmdport))
+        cmd = socket.create_connection((self.player, self.cmdport))
         cmd.settimeout(1.0)
         splat = pickle.dumps(current,pickle.HIGHEST_PROTOCOL)
         cmd.sendall(splat)
@@ -81,7 +82,7 @@ class Client():
         
     def doit(self):
         """Tell the remote player to execute the current phase"""
-        cmd = socket.create_connection((self.host, self.cmdport))
+        cmd = socket.create_connection((self.player, self.cmdport))
         cmd.settimeout(1.0)
         splat = pickle.dumps(run.Run(),pickle.HIGHEST_PROTOCOL)
         cmd.sendall(splat)
