@@ -94,7 +94,7 @@ class Client():
         self.ressock.listen(5)
         
     def results(self):
-        """Retrieve all the results from the player for the current phase"""x
+        """Retrieve all the results from the player for the current phase"""
         done = False
         while not done:
             sock,addr = self.ressock.accept()
