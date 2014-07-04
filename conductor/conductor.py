@@ -45,16 +45,20 @@ import client
 def __main__():
 
     test_config = configparser.ConfigParser()
-    test_config.read(sys.argv[1]) # Cheap and sleazy for now
+    master = open(sys.argv[1]) # Cheap and sleazy for now
+    test_config.read_file(master)
 
     defaults = test_config['Test']
     
     clients = []
     for i in test_config['Clients']:
         client_config = configparser.ConfigParser()
-        client_config.read(test_config['Clients'][i]) 
+        file = open(test_config['Clients'][i])
+        client_config.read_file(file)
         clients.append(client.Client(client_config))
-
+        file.close()
+        
+    master.close()
     # In order to get things to run somewhat in parallel
     # we do the work in several phases.
     # 1. Download the specific phase
