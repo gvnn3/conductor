@@ -98,7 +98,7 @@ def __main__():
     host = defaults['host']
     cmdport = int(defaults['cmdport'])
 
-    play = Player(('127.0.0.1', cmdport))
+    play = Player(('0.0.0.0', cmdport))
     play.run()
     
 if __name__ == "__main__":
