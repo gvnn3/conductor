@@ -90,7 +90,7 @@ class Client():
         self.ressock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
         self.ressock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.ressock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-        self.ressock.bind((self.host,self.resultport))
+        self.ressock.bind(('0.0.0.0',self.resultport))
         self.ressock.listen(5)
         
     def results(self):
