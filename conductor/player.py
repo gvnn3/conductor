@@ -34,6 +34,8 @@
 # commands as they are passed in, returning the reults up the pipe.
 
 import socket
+import configparser
+import sys
 import pickle
 import pickletools
 
@@ -53,6 +55,8 @@ class Player():
     
     def __init__(self, command, key = None):
         self.cmdsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+        self.cmdsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.cmdsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         self.cmdsock.bind(command)
         self.cmdsock.listen(5)
         
@@ -87,7 +91,14 @@ class Player():
 
 def __main__():
 
-    play = Player(('127.0.0.1', 5555))
+    local_config = configparser.ConfigParser()
+    local_config.read(sys.argv[1]) # Cheap and sleazy for now
+
+    defaults = local_config['Master']
+    host = defaults['host']
+    cmdport = int(defaults['cmdport'])
+
+    play = Player(('127.0.0.1', cmdport))
     play.run()
     
 if __name__ == "__main__":

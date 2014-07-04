@@ -40,77 +40,52 @@ import configparser
 import sys
 
 # local imports
-import phase
-import step
-import retval
-import run
+import client
 
 def __main__():
 
-    phases = []
-    local_config = configparser.ConfigParser()
-    local_config.read(sys.argv[1]) # Cheap and sleazy for now
+    test_config = configparser.ConfigParser()
+    test_config.read(sys.argv[1]) # Cheap and sleazy for now
 
-    defaults = local_config['Master']
-    host = defaults['host']
-    cmdport = int(defaults['cmdport'])
-    resport = int(defaults['resultsport'])
+    defaults = test_config['Test']
+    
+    clients = []
+    for i in test_config['Clients']:
+        client_config = configparser.ConfigParser()
+        client_config.read(test_config['Clients'][i]) 
+        clients.append(client.Client(client_config))
 
-    ressock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-    ressock.bind((host,resport))
-    ressock.listen(5)
-
-    startup = phase.Phase(host, resport)
-    for i in local_config['Startup']:
-        startup.append(step.Step(local_config['Startup'][i]))
-    phases.append(startup)
-
-    run_phase = phase.Phase(host, resport)
-    for i in local_config['Run']:
-        run_phase.append(step.Step(local_config['Run'][i]))
-    phases.append(run_phase)
-
-    collect = phase.Phase(host, resport)
-    for i in local_config['Collect']:
-        collect.append(step.Step(local_config['Collect'][i]))
-    phases.append(collect)
-
-    reset = phase.Phase(host, resport)
-    for i in local_config['Reset']:
-        reset.append(step.Step(local_config['Reset'][i]))
-    phases.append(reset)
-
+    # In order to get things to run somewhat in parallel
+    # we do the work in several phases.
+    # 1. Download the specific phase
+    # 2. Start all phases (doit() method)
+    # 3. Collect results
+    # These three steps are taken for each of the four phases.
     for trial in range(int(defaults['trials'])):
-        # Send our phases down
-        for nextphase in phases:
-            cmd = socket.create_connection((host, cmdport))
-            cmd.settimeout(1.0)
-            splat = pickle.dumps(nextphase,pickle.HIGHEST_PROTOCOL)
-            cmd.sendall(splat)
-            message = cmd.recv(65536)
-            if (len(message) > 0):
-                ret = pickle.loads(message)
-                print(ret.code, ret.message)
-            cmd.close()
-            # Run our phase
-            cmd = socket.create_connection((host, cmdport))
-            cmd.settimeout(1.0)
-            splat = pickle.dumps(run.Run(),pickle.HIGHEST_PROTOCOL)
-            cmd.sendall(splat)
-            cmd.close()
-            done = False
-            # Collect results
-            while not done:
-                sock,addr = ressock.accept()
-                data = sock.recv(65536)
-                message = pickle.loads(data)
-                if type(message) == retval.RetVal:
-                    if message.code == retval.RETVAL_DONE:
-                        print ("done")
-                        done = True
-                    else:
-                        print (message.code, message.message)
-                sock.close()
+        for nextclient in clients:
+            nextclient.startup()
+        for nextclient in clients:
+            nextclient.doit()
+        for nextclient in clients:
+            nextclient.results()
+        for nextclient in clients:
+            nextclient.run()
+        for nextclient in clients:
+            nextclient.doit()
+        for nextclient in clients:
+            nextclient.results()
+        for nextclient in clients:
+            nextclient.collect()
+        for nextclient in clients:
+            nextclient.doit()
+        for nextclient in clients:
+            nextclient.results()
+        for nextclient in clients:
+            nextclient.reset()
+        for nextclient in clients:
+            nextclient.doit()
+        for nextclient in clients:
+            nextclient.results()
 
 if __name__ == "__main__":
     __main__()
