@@ -46,11 +46,14 @@ class Step():
 
     def run(self):
         try:
-            output = subprocess.check_output(self.args)
+            output = subprocess.check_output(self.args,timeout=10)
         except subprocess.CalledProcessError as err:
             print ("Code: ", err.returncode, "Command: ", err.cmd,
                    "Output: ", err.output)
             ret = retval.RetVal(err.returncode, err.cmd)
+        except subprocess.TimeoutExpired as err:
+            print ("Timeout on: ", self.args)
+            ret = retval.RetVal(0, "Timeout")
         else:
             print ("Success: ", output)
             ret = retval.RetVal(0, output)
