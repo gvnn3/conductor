@@ -70,7 +70,11 @@ class Client():
 
     def download(self, current):
         """Send a phase down to the player"""
-        cmd = socket.create_connection((self.player, self.cmdport))
+        try:
+            cmd = socket.create_connection((self.player, self.cmdport))
+        except:
+            print("Failed to connect to: ", self.player, self.cmdport)
+            exit()
         cmd.settimeout(1.0)
         splat = pickle.dumps(current,pickle.HIGHEST_PROTOCOL)
         cmd.sendall(splat)
@@ -82,7 +86,11 @@ class Client():
         
     def doit(self):
         """Tell the remote player to execute the current phase"""
-        cmd = socket.create_connection((self.player, self.cmdport))
+        try:
+            cmd = socket.create_connection((self.player, self.cmdport))
+        except:
+            print("Failed to connect to: ", self.player, self.cmdport)
+            exit()
         cmd.settimeout(1.0)
         splat = pickle.dumps(run.Run(),pickle.HIGHEST_PROTOCOL)
         cmd.sendall(splat)
