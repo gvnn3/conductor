@@ -34,7 +34,8 @@
 # by the Client when asked by the Conductor.
 
 import socket
-import retval
+
+from conductor import retval
 
 class Phase():
     """Each Phase contains one, or more, steps."""

@@ -37,10 +37,10 @@ import configparser
 import socket
 import pickle
 
-import phase
-import step
-import run
-import retval
+from conductor import phase
+from conductor import step
+from conductor import run
+from conductor import retval
 
 class Client():
 

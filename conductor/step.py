@@ -37,7 +37,7 @@
 import subprocess
 import shlex
 
-import retval
+from conductor import retval
 
 class Step():
 

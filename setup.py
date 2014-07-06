@@ -58,4 +58,5 @@ setup(
         "Topic :: Utilities",
         "License :: OSI Approved :: BSD License",
     ],
+    scripts=["scripts/conduct", "scripts/player"]
 )
