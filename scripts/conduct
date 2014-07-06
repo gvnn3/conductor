@@ -40,7 +40,7 @@ import configparser
 import sys
 
 # local imports
-import client
+from conductor import *
 
 def __main__():
 
