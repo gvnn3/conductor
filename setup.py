@@ -51,7 +51,7 @@ setup(
     license = "BSD",
     keywords = "networking testing",
     url = "http://packages.python.org/",
-    packages=['conductor', 'tests'],
+    packages=['conductor'],
     long_description=read('README'),
     classifiers=[
         "Development Status :: 1 - Alpha",
