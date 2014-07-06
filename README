@@ -56,3 +56,6 @@ each client allows the Conductor to start each Phase nearly
 simultaneously, although the fact that the Conductor itself serializes
 its communication among the clients means that there is a small amount
 of skew in when each Player is told to execute its steps.  
+
+
+This work supported by: Rubicon Communicatuons, LLC (Netgate)
