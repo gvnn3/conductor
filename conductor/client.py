@@ -58,7 +58,15 @@ class Client():
 
         self.run_phase = phase.Phase(self.conductor, self.resultport)
         for i in config['Run']:
-            self.run_phase.append(step.Step(config['Run'][i]))
+            if (i.find('spawn') != -1):
+                self.run_phase.append(step.Step(config['Run'][i], spawn=True))
+            elif (i.find('timeout') != -1):
+                # Timeout value MUST follow the keyword
+                print (int(i.replace('timeout','')))
+                self.run_phase.append(step.Step(config['Run'][i],
+                                        timeout=int(i.replace('timeout',''))))
+            else:
+                self.run_phase.append(step.Step(config['Run'][i]))
 
         self.collect_phase = phase.Phase(self.conductor, self.resultport)
         for i in config['Collect']:

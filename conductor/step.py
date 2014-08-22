@@ -41,23 +41,30 @@ from conductor import retval
 
 class Step():
 
-    def __init__(self, command, result = ""):
+    def __init__(self, command, spawn=False, timeout=30):
         self.args = shlex.split(command)
-
+        self.spawn = spawn
+        self.timeout = timeout
+        
     def run(self):
-        try:
-            output = subprocess.check_output(self.args,timeout=10)
-        except subprocess.CalledProcessError as err:
-            print ("Code: ", err.returncode, "Command: ", err.cmd,
-                   "Output: ", err.output)
-            ret = retval.RetVal(err.returncode, err.cmd)
-        except subprocess.TimeoutExpired as err:
-            print ("Timeout on: ", self.args)
-            ret = retval.RetVal(0, "Timeout")
+        if self.spawn == True:
+                output = subprocess.Popen(self.args)
+                return retval.RetVal(0, "Spawned")
         else:
-            print ("Success: ", output)
-            ret = retval.RetVal(0, output)
-        return ret
+            try:
+                output = subprocess.check_output(self.args,
+                                                 timeout=self.timeout)
+            except subprocess.CalledProcessError as err:
+                print ("Code: ", err.returncode, "Command: ", err.cmd,
+                       "Output: ", err.output)
+                ret = retval.RetVal(err.returncode, err.cmd)
+            except subprocess.TimeoutExpired as err:
+                print ("Timeout on: ", self.args)
+                ret = retval.RetVal(0, "Timeout")
+            else:
+                print ("Success: ", output)
+                ret = retval.RetVal(0, output)
+            return ret
             
     def ready(self):
         """Tell the server we're ready to go."""
