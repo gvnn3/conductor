@@ -57,5 +57,22 @@ simultaneously, although the fact that the Conductor itself serializes
 its communication among the clients means that there is a small amount
 of skew in when each Player is told to execute its steps.  
 
+Each phase is made up of several steps.  There are two, special,
+keywords for steps executed in the Run phase.
+
+A spawn keyword (spawn:echo 30) will spawn the command as a
+sub-process and not wait for it to execute, nor collect the program's
+return value.  The spawn keyword is best used to start several
+programs simultaneously, such as multiple network streams when testing
+a piece of networking equipment.
+
+A timeout keyword (timeout10:sleep 30) will execute the command with a
+timeout.  The timeout is the number directly after the keyword and is
+expressed in seconds.  A command executed with a timeout will be
+interrupted by its parent if it doesn't exit before the timeout
+expires.  In the example above the sleep command will try to sleep for
+30 seconds but then be interrupted after 10 seconds.  The timeout
+keyword is useful for programs that want to run forever or which wait
+for human input unnecessarily.
 
 This work supported by: Rubicon Communications, LLC (Netgate)
