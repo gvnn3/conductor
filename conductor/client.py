@@ -62,7 +62,6 @@ class Client():
                 self.run_phase.append(step.Step(config['Run'][i], spawn=True))
             elif (i.find('timeout') != -1):
                 # Timeout value MUST follow the keyword
-                print (int(i.replace('timeout','')))
                 self.run_phase.append(step.Step(config['Run'][i],
                                         timeout=int(i.replace('timeout',''))))
             else:
