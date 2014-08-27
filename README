@@ -1,11 +1,73 @@
 Conductor - A system for testing distributed systems across a network
-
+---------------------------------------------------------------------
 Many test frameworks exist to test code on a single host or, across a
 network, on a single server.  Conductor is a distributed system test
 framework, written in Python, that can be used to coordinate a set of
 tests among a set of clients.  The Conductor system allows a single
 machine to control several systems, orchestrating tests that require
 the cooperation of several networked devices.
+
+Conductor is written in Python 3 and does not require any external
+packages.
+
+Installation
+------------
+(Installing packages normally requires root privileges)
+
+sudo python3 setup.py install
+
+Usage
+-----
+Conductor installs two scripts, player and conduct, which are used to
+run and control tests on the systems involved.  Every test has a
+master configuration file, usually named test.cfg, as well as a configuration
+file for each host involved in the test.  Two simple test cases are
+found in the tests/localhost and tests/timeout sub-directories.
+
+tests/localhost/test.cfg    <- used by conduct script
+tests/localhost/dut.cfg     <- used by player script
+
+To familiarize yourself with the system let's try the localhost
+test.  The localhost test requires only one system, rather than
+a distributed set.  Open two terminal windows on the host.
+In terminal 1 type:
+
+player dut.cfg
+
+In terminal 2 type:
+
+conduct test.cfg
+
+You MUST always start all players before the conductor.
+
+The output of the conductor should look like this:
+
+0 phase received
+running
+0 b'startup\n'
+done
+0 phase received
+running
+0 b'running\n'
+0 b'PING 127.0.0.1 (127.0.0.1): 56 data bytes\n64 bytes from 127.0.0.1: icmp_seq=0 ttl=64 time=0.046 ms\n64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.162 ms\n64 bytes from 127.0.0.1: icmp_seq=2 ttl=64 time=0.143 ms\n\n--- 127.0.0.1 ping statistics ---\n3 packets transmitted, 3 packets received, 0.0% packet loss\nround-trip min/avg/max/stddev = 0.046/0.117/0.162/0.051 ms\n'
+done
+0 phase received
+running
+0 b'collecting\n'
+done
+0 phase received
+running
+0 b'collecting\n'
+done
+
+Once the test is complete the conduct script will exit and return the
+caller back to the shell prompt.  The player will continue to await
+commands from another run of the conduct script.
+
+
+
+Commentary
+----------
 
 A common use for Conductor is to test a network devices, such as a
 router or firewall, that is connected to multiple senders and
