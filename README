@@ -32,11 +32,11 @@ test.  The localhost test requires only one system, rather than
 a distributed set.  Open two terminal windows on the host.
 In terminal 1 type:
 
-player dut.cfg
+> player dut.cfg
 
 In terminal 2 type:
 
-conduct test.cfg
+> conduct test.cfg
 
 You MUST always start all players before the conductor.
 
