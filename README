@@ -7,8 +7,8 @@ tests among a set of clients.  The Conductor system allows a single
 machine to control several systems, orchestrating tests that require
 the cooperation of several networked devices.
 
-Conductor is written in Python 3 and does not require any external
-packages.
+Conductor is written in Python 3 and requires ONLY the
+py33-setuptools33 package.
 
 Installation
 ------------
