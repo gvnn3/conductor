@@ -58,5 +58,6 @@ setup(
         "Topic :: Utilities",
         "License :: OSI Approved :: BSD License",
     ],
-    scripts=["scripts/conduct", "scripts/player"]
+    scripts=["scripts/conduct", "scripts/player"],
+    install_requires=['configparser']
 )
