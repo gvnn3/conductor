@@ -36,6 +36,7 @@
 import configparser
 import socket
 import pickle
+import struct
 
 from conductor import phase
 from conductor import step
@@ -85,7 +86,9 @@ class Client():
         cmd.settimeout(1.0)
         splat = pickle.dumps(current,pickle.HIGHEST_PROTOCOL)
         cmd.sendall(splat)
-        message = cmd.recv(65536)
+
+        message = self.len_recv(cmd);
+
         if (len(message) > 0):
             ret = pickle.loads(message)
             print(ret.code, ret.message)
@@ -114,7 +117,7 @@ class Client():
         done = False
         while not done:
             sock,addr = self.ressock.accept()
-            data = sock.recv(65536)
+            data = self.len_recv(sock)
             message = pickle.loads(data)
             if type(message) == retval.RetVal:
                 if message.code == retval.RETVAL_DONE:
@@ -140,4 +143,19 @@ class Client():
     def reset(self):
         """Push the rset phase to the player"""
         self.download(self.collect_phase)
+
+    def len_recv(self, sock):
+        """Get the length of the message we're about to receive"""
+        buf = b''
+        retbuf = b''
+        
+        while len(buf) < 4:
+           buf += sock.recv(4 - len(buf))
+
+        length = socket.ntohl(struct.unpack('!I', buf)[0])
+
+        while len(retbuf) < length:
+           retbuf += sock.recv(length - len(retbuf));
+
+        return retbuf;
 

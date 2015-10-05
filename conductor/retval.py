@@ -34,6 +34,8 @@
 # to the conductor.
 
 import pickle
+import struct
+import socket
 
 RETVAL_OK=	0
 RETVAL_ERROR=	1
@@ -48,4 +50,6 @@ class RetVal():
 
     def send(self, sock):
         s = pickle.dumps(self)
+        length = struct.pack('!I', socket.htonl(len(s)))
+        s = length + s;
         sock.sendall(s)
