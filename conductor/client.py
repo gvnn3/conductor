@@ -142,7 +142,7 @@ class Client():
 
     def reset(self):
         """Push the rset phase to the player"""
-        self.download(self.collect_phase)
+        self.download(self.reset_phase)
 
     def len_recv(self, sock):
         """Get the length of the message we're about to receive"""
