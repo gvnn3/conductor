@@ -53,7 +53,8 @@ class Step():
         else:
             try:
                 output = subprocess.check_output(self.args,
-                                                 timeout=self.timeout)
+                                                 timeout=self.timeout,
+                                                 universal_newlines=True)
             except subprocess.CalledProcessError as err:
                 print ("Code: ", err.returncode, "Command: ", err.cmd,
                        "Output: ", err.output)
