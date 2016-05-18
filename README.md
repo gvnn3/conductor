@@ -1,5 +1,4 @@
-# Conductor - A system for testing distributed systems across a
-network #
+# Conductor - A system for testing distributed systems across a network #
 
 Many test frameworks exist to test code on a single host or, across a
 network, on a single server.  Conductor is a distributed system test
