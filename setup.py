@@ -52,7 +52,7 @@ setup(
     keywords = "networking testing",
     url = "http://packages.python.org/",
     packages=['conductor'],
-    long_description=read('README'),
+    long_description=read('README.md'),
     classifiers=[
         "Development Status :: 1 - Alpha",
         "Topic :: Utilities",
