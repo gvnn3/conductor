@@ -1,0 +1,4 @@
+{
+  "client_address": ["localhost:8900","localhost:8901","localhost:8902"],
+  "maxreries" : 100
+}

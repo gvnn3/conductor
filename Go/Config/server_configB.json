@@ -1,0 +1,11 @@
+{
+  "servers_address": ["localhost:8900","localhost:8902"],
+  "myport" : ":8901",
+  "maxreries" : 13,
+  "timeout_entry" : 200,
+  "maxraftstate" : 1000000,
+  "snapshotfilename" : "Persister/snapshot2.hdb",
+  "raftstatefilename" : "Persister/raftstate2.hdb",
+  "persistencestrategy" : "everysec",
+  "chubbygomapstrategy" : "concurrentmap"
+}
