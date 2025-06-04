@@ -11,11 +11,20 @@ Conductor is written in Python 3 and requires ONLY the
 
 `py33-setuptools33 package.`
 
+## Documentation ##
+
+- **[Quick Start Guide](QUICK_START.md)** - Get running in 5 minutes
+- **[Installation Guide](INSTALLATION_GUIDE.md)** - Detailed setup instructions
+- **[Example Configurations](examples/)** - Real-world test examples
+- **[Architecture Overview](ARCHITECTURE.md)** - System internals
+
 ## Installation ##
 
 (Installing packages normally requires root privileges)
 
 `sudo python3 setup.py install`
+
+For detailed installation instructions, see the [Installation Guide](INSTALLATION_GUIDE.md).
 
 ## Usage ##
 
