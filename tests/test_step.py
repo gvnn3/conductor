@@ -1,7 +1,11 @@
 """Tests for the Step class."""
 
 import pytest
+from unittest.mock import patch, MagicMock
+import subprocess
+
 from conductor.step import Step
+from conductor.retval import RetVal
 
 
 class TestStepParsing:
@@ -34,3 +38,72 @@ class TestStepParsing:
         assert step.args == ["echo", "hello world"]
         assert step.spawn is False
         assert step.timeout == 30
+
+
+class TestStepExecution:
+    """Test command execution functionality of Step class."""
+    
+    @patch('subprocess.check_output')
+    def test_executes_simple_command_successfully(self, mock_check_output):
+        """Test successful execution of a simple command."""
+        mock_check_output.return_value = "hello world\n"
+        
+        step = Step("echo hello world")
+        result = step.run()
+        
+        assert isinstance(result, RetVal)
+        assert result.code == 0
+        assert result.message == "hello world\n"
+        mock_check_output.assert_called_once_with(
+            ["echo", "hello", "world"],
+            timeout=30,
+            universal_newlines=True
+        )
+    
+    @patch('subprocess.Popen')
+    def test_spawns_command_without_waiting(self, mock_popen):
+        """Test that spawn commands don't wait for completion."""
+        mock_process = MagicMock()
+        mock_popen.return_value = mock_process
+        
+        step = Step("iperf -s", spawn=True)
+        result = step.run()
+        
+        assert isinstance(result, RetVal)
+        assert result.code == 0
+        assert result.message == "Spawned"
+        mock_popen.assert_called_once_with(["iperf", "-s"])
+        # Should not call wait() or communicate() on the process
+        mock_process.wait.assert_not_called()
+        mock_process.communicate.assert_not_called()
+    
+    @patch('subprocess.check_output')
+    def test_handles_command_failure(self, mock_check_output):
+        """Test handling of command that returns non-zero exit code."""
+        mock_check_output.side_effect = subprocess.CalledProcessError(
+            returncode=1,
+            cmd=["false"],
+            output="error output"
+        )
+        
+        step = Step("false")
+        result = step.run()
+        
+        assert isinstance(result, RetVal)
+        assert result.code == 1
+        assert result.message == ["false"]
+    
+    @patch('subprocess.check_output')
+    def test_handles_command_timeout(self, mock_check_output):
+        """Test handling of command timeout."""
+        mock_check_output.side_effect = subprocess.TimeoutExpired(
+            cmd=["sleep", "100"],
+            timeout=1
+        )
+        
+        step = Step("sleep 100", timeout=1)
+        result = step.run()
+        
+        assert isinstance(result, RetVal)
+        assert result.code == 0
+        assert result.message == "Timeout"
