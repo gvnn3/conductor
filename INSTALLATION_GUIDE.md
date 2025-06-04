@@ -87,7 +87,7 @@ The conductor is the master node that orchestrates the distributed tests.
 
 ### 1. Create Master Configuration
 
-Create a master configuration file (e.g., `test_config.cfg`):
+Create a coordinator configuration file (e.g., `test_config.cfg`):
 
 ```ini
 # Master Test Configuration

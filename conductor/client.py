@@ -46,11 +46,11 @@ from conductor import retval
 class Client:
     def __init__(self, config):
         """Load up all the config data, including all phases"""
-        master = config["Master"]
-        self.conductor = master["conductor"]
-        self.player = master["player"]
-        self.cmdport = int(master["cmdport"])
-        self.resultport = int(master["resultsport"])
+        coordinator = config["Coordinator"]
+        self.conductor = coordinator["conductor"]
+        self.player = coordinator["player"]
+        self.cmdport = int(coordinator["cmdport"])
+        self.resultport = int(coordinator["resultsport"])
 
         self.startup_phase = phase.Phase(self.conductor, self.resultport)
         for i in config["Startup"]:

@@ -229,7 +229,7 @@ class TestRealConfigParsing:
 
         # Create a real config file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".cfg", delete=False) as f:
-            f.write("""[Master]
+            f.write("""[Coordinator]
 conductor = 10.0.0.1
 player = 10.0.0.2
 cmdport = 6970

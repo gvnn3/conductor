@@ -87,8 +87,8 @@ class TestConductCLIErrors:
             f.write("""[Test]
 trials = 1
 
-[Clients]
-client1 = missing_client.cfg
+[Workers]
+worker1 = missing_client.cfg
 """)
             config_file = f.name
 
@@ -117,9 +117,9 @@ class TestConductCLIOptions:
         master_config.write("""[Test]
 trials = 2
 
-[Clients]
-client1 = {client1}
-client2 = {client2}
+[Workers]
+worker1 = {client1}
+worker2 = {client2}
 """)
         master_config.close()
 
@@ -127,7 +127,7 @@ client2 = {client2}
         client1_config = tempfile.NamedTemporaryFile(
             mode="w", suffix=".cfg", delete=False
         )
-        client1_config.write("""[Master]
+        client1_config.write("""[Coordinator]
 player = 127.0.0.1
 conductor = 127.0.0.1
 cmdport = 16970
@@ -150,7 +150,7 @@ step1 = echo "Client 1 reset"
         client2_config = tempfile.NamedTemporaryFile(
             mode="w", suffix=".cfg", delete=False
         )
-        client2_config.write("""[Master]
+        client2_config.write("""[Coordinator]
 player = 127.0.0.1
 conductor = 127.0.0.1
 cmdport = 16972
@@ -170,21 +170,21 @@ step1 = echo "Client 2 reset"
 """)
         client2_config.close()
 
-        # Update master config with client paths
+        # Update coordinator config with worker paths
         with open(master_config.name, "w") as f:
             f.write(f"""[Test]
 trials = 2
 
-[Clients]
-client1 = {client1_config.name}
-client2 = {client2_config.name}
+[Workers]
+worker1 = {client1_config.name}
+worker2 = {client2_config.name}
 """)
 
         return master_config.name, client1_config.name, client2_config.name
 
     def test_dry_run_option(self):
         """Test --dry-run shows what would be executed."""
-        master, client1, client2 = self.create_test_configs()
+        master, client1, worker2 = self.create_test_configs()
 
         try:
             result = subprocess.run(
@@ -206,7 +206,7 @@ client2 = {client2_config.name}
 
     def test_trials_option(self):
         """Test -t/--trials overrides config file."""
-        master, client1, client2 = self.create_test_configs()
+        master, client1, worker2 = self.create_test_configs()
 
         try:
             result = subprocess.run(
@@ -225,7 +225,7 @@ client2 = {client2_config.name}
 
     def test_phases_option_single(self):
         """Test -p/--phases with single phase."""
-        master, client1, client2 = self.create_test_configs()
+        master, client1, worker2 = self.create_test_configs()
 
         try:
             result = subprocess.run(
@@ -251,7 +251,7 @@ client2 = {client2_config.name}
 
     def test_phases_option_multiple(self):
         """Test -p/--phases with multiple phases."""
-        master, client1, client2 = self.create_test_configs()
+        master, client1, worker2 = self.create_test_configs()
 
         try:
             result = subprocess.run(
@@ -278,7 +278,7 @@ client2 = {client2_config.name}
 
     def test_clients_option(self):
         """Test -c/--clients filters clients."""
-        master, client1, client2 = self.create_test_configs()
+        master, client1, worker2 = self.create_test_configs()
 
         try:
             result = subprocess.run(
@@ -304,7 +304,7 @@ client2 = {client2_config.name}
 
     def test_verbose_option(self):
         """Test -v/--verbose enables debug output."""
-        master, client1, client2 = self.create_test_configs()
+        master, client1, worker2 = self.create_test_configs()
 
         try:
             result = subprocess.run(
@@ -322,7 +322,7 @@ client2 = {client2_config.name}
 
     def test_quiet_option(self):
         """Test -q/--quiet suppresses non-error output."""
-        master, client1, client2 = self.create_test_configs()
+        master, client1, worker2 = self.create_test_configs()
 
         try:
             result = subprocess.run(
@@ -345,7 +345,7 @@ class TestConductCLIIntegration:
 
     def test_full_execution_with_mock_client(self):
         """Test conduct with mocked client connections."""
-        master, client1, client2 = TestConductCLIOptions().create_test_configs()
+        master, client1, worker2 = TestConductCLIOptions().create_test_configs()
 
         try:
             # We can't easily test actual network connections in unit tests,

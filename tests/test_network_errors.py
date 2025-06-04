@@ -24,7 +24,7 @@ class TestNetworkErrorHandling:
         # Client config
         client_config = os.path.join(test_dir, "client.cfg")
         with open(client_config, "w") as f:
-            f.write(f"""[Master]
+            f.write(f"""[Coordinator]
 player = 127.0.0.1
 conductor = 127.0.0.1
 cmdport = {port}
@@ -83,7 +83,7 @@ test_client = {client_config}
         client_config = os.path.join(test_dir, "client.cfg")
 
         with open(client_config, "w") as f:
-            f.write("""[Master]
+            f.write("""[Coordinator]
 player = 127.0.0.1
 conductor = 999.999.999.999
 cmdport = 21100
@@ -124,7 +124,7 @@ step1 = echo "test"
 
         # Create a mock phase that doesn't send results properly
         config = configparser.ConfigParser()
-        config["Master"] = {
+        config["Coordinator"] = {
             "conductor": "127.0.0.1",
             "player": "127.0.0.1",
             "cmdport": "21200",

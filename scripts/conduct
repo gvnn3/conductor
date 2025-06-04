@@ -108,10 +108,10 @@ def __main__():
     )
     
     parser.add_argument(
-        '-c', '--clients',
+        '-c', '--workers',
         nargs='+',
         default=None,
-        help='Specific clients to use (overrides config file)'
+        help='Specific workers to use (overrides config file)'
     )
     
     parser.add_argument(
@@ -167,42 +167,42 @@ def __main__():
         logger.error("Configuration missing [Test] section")
         sys.exit(1)
     
-    # Load clients
+    # Load workers
     clients = []
-    client_section = test_config['Clients']
+    worker_section = test_config['Workers']
     
-    # Filter clients if specified
-    if args.clients:
-        client_keys = [k for k in client_section if k in args.clients]
-        if not client_keys:
-            logger.error(f"No matching clients found: {args.clients}")
+    # Filter workers if specified
+    if args.workers:
+        worker_keys = [k for k in worker_section if k in args.workers]
+        if not worker_keys:
+            logger.error(f"No matching workers found: {args.workers}")
             sys.exit(1)
     else:
-        client_keys = client_section
+        worker_keys = worker_section
     
-    logger.info(f"Loading {len(client_keys)} client(s)")
+    logger.info(f"Loading {len(worker_keys)} worker(s)")
     
-    for client_name in client_keys:
-        client_config_path = client_section[client_name]
+    for worker_name in worker_keys:
+        worker_config_path = worker_section[worker_name]
         
-        if not os.path.exists(client_config_path):
-            logger.error(f"Client config not found: {client_config_path}")
+        if not os.path.exists(worker_config_path):
+            logger.error(f"Worker config not found: {worker_config_path}")
             sys.exit(1)
         
-        logger.debug(f"Loading client {client_name} from {client_config_path}")
+        logger.debug(f"Loading worker {worker_name} from {worker_config_path}")
         
-        client_config = configparser.ConfigParser()
+        worker_config = configparser.ConfigParser()
         try:
-            with open(client_config_path) as file:
-                client_config.read_file(file)
-            clients.append(client.Client(client_config))
+            with open(worker_config_path) as file:
+                worker_config.read_file(file)
+            clients.append(client.Client(worker_config))
         except Exception as e:
-            logger.error(f"Failed to load client {client_name}: {e}")
+            logger.error(f"Failed to load worker {worker_name}: {e}")
             sys.exit(1)
     
     if args.dry_run:
         logger.info("DRY RUN MODE - No commands will be executed")
-        logger.info(f"Would run {trials} trial(s) with {len(clients)} client(s)")
+        logger.info(f"Would run {trials} trial(s) with {len(clients)} worker(s)")
         logger.info(f"Phases: {args.phases}")
         sys.exit(0)
     

@@ -25,14 +25,14 @@ class TestCLIIntegration:
             f.write("""[Test]
 trials = 1
 
-[Clients]
-test_client = {client_config}
+[Workers]
+test_worker = {client_config}
 """)
 
         # Client config
         client_config = os.path.join(test_dir, "client.cfg")
         with open(client_config, "w") as f:
-            f.write("""[Master]
+            f.write("""[Coordinator]
 player = 127.0.0.1
 conductor = 127.0.0.1
 cmdport = 18970
@@ -52,13 +52,13 @@ step1 = echo "Integration test collect"
 step1 = echo "Integration test reset"
 """)
 
-        # Update master config with client path
+        # Update coordinator config with client path
         with open(master_config, "w") as f:
             f.write(f"""[Test]
 trials = 1
 
-[Clients]
-test_client = {client_config}
+[Workers]
+test_worker = {client_config}
 """)
 
         yield master_config, client_config, test_dir
@@ -222,7 +222,7 @@ test_client = {client_config}
         # Create modified client config for conductor to use custom port
         custom_client_config = os.path.join(test_dir, "custom_client.cfg")
         with open(custom_client_config, "w") as f:
-            f.write("""[Master]
+            f.write("""[Coordinator]
 player = 127.0.0.1
 conductor = 127.0.0.1
 cmdport = 19970
@@ -241,14 +241,14 @@ step1 = echo "Collect"
 step1 = echo "Reset"
 """)
 
-        # Update master config
+        # Update coordinator config
         custom_master_config = os.path.join(test_dir, "custom_master.cfg")
         with open(custom_master_config, "w") as f:
             f.write(f"""[Test]
 trials = 1
 
-[Clients]
-test_client = {custom_client_config}
+[Workers]
+test_worker = {custom_client_config}
 """)
 
         # Start player with custom port override

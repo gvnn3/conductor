@@ -63,7 +63,7 @@ conduct -v test_config.cfg
 
 ### Configuration File Format
 
-The master configuration file specifies test parameters and client configurations:
+The coordinator configuration file specifies test parameters and worker configurations:
 
 ```ini
 [Test]

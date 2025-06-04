@@ -18,7 +18,7 @@ class TestClientInitialization:
     def create_test_config(self):
         """Create a test configuration."""
         config = configparser.ConfigParser()
-        config["Master"] = {
+        config["Coordinator"] = {
             "conductor": "192.168.1.1",
             "player": "192.168.1.10",
             "cmdport": "6970",
@@ -37,8 +37,8 @@ class TestClientInitialization:
         config["Reset"] = {"step1": "rm -rf /tmp/test"}
         return config
 
-    def test_initialization_parses_master_config(self):
-        """Test that Client parses Master configuration correctly."""
+    def test_initialization_parses_coordinator_config(self):
+        """Test that Client parses Coordinator configuration correctly."""
         config = self.create_test_config()
 
         client = Client(config)
@@ -123,7 +123,7 @@ class TestClientCommunication:
     def create_test_client(self):
         """Create a test client with minimal config."""
         config = configparser.ConfigParser()
-        config["Master"] = {
+        config["Coordinator"] = {
             "conductor": "localhost",
             "player": "localhost",
             "cmdport": "6970",
@@ -303,7 +303,7 @@ class TestClientPhaseMethods:
     def create_test_client(self):
         """Create a test client with minimal config."""
         config = configparser.ConfigParser()
-        config["Master"] = {
+        config["Coordinator"] = {
             "conductor": "localhost",
             "player": "localhost",
             "cmdport": "6970",

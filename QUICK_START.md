@@ -23,13 +23,13 @@ python setup.py install
 [Test]
 trials = 1
 
-[Clients]
-demo = demo_client.cfg
+[Workers]
+demo = demo_worker.cfg
 ```
 
-**`demo_client.cfg`:**
+**`demo_worker.cfg`:**
 ```ini
-[Master]
+[Coordinator]
 player = 127.0.0.1
 conductor = 127.0.0.1
 cmdport = 6970
@@ -60,7 +60,7 @@ step3 = echo "=== Demo Complete ==="
 
 Terminal 1:
 ```bash
-player demo_client.cfg
+player demo_worker.cfg
 ```
 
 Terminal 2:
@@ -79,13 +79,13 @@ Testing between two machines:
 [Test]
 trials = 1
 
-[Clients]
+[Workers]
 machine_b = machine_b.cfg
 ```
 
 **`machine_b.cfg`:**
 ```ini
-[Master]
+[Coordinator]
 player = 192.168.1.101      # Machine B's IP
 conductor = 192.168.1.100   # Machine A's IP
 cmdport = 6970
@@ -190,19 +190,19 @@ conduct test.cfg > results.log 2>&1
 conduct test.cfg 2>&1 | tee results.log
 ```
 
-### Per-Client Results
-Results are prefixed with client ID (0, 1, 2, etc.):
+### Per-Worker Results
+Results are prefixed with worker ID (0, 1, 2, etc.):
 ```
 0 phase received
-0 Command output from client 0
+0 Command output from worker 0
 1 phase received  
-1 Command output from client 1
+1 Command output from worker 1
 ```
 
 ### Creating Result Reports
 ```bash
 #!/bin/bash
-# Example: Organize results by client and create summary
+# Example: Organize results by worker and create summary
 
 mkdir -p results/$(date +%Y%m%d_%H%M%S)
 cd results/$(date +%Y%m%d_%H%M%S)
@@ -210,9 +210,9 @@ cd results/$(date +%Y%m%d_%H%M%S)
 # Run test and capture output
 conduct ../../test.cfg 2>&1 | tee full_output.log
 
-# Extract per-client results
-grep "^0 " full_output.log > client0_results.txt
-grep "^1 " full_output.log > client1_results.txt
+# Extract per-worker results
+grep "^0 " full_output.log > worker0_results.txt
+grep "^1 " full_output.log > worker1_results.txt
 
 # Create summary
 echo "Test Summary - $(date)" > summary.txt
