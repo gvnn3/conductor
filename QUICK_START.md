@@ -177,6 +177,60 @@ spawn2 = top -b -n 60 > /tmp/top.log
 4. **Check player is running** before starting conductor
 5. **Keep configurations simple** and build complexity gradually
 
+## Capturing and Managing Results
+
+By default, conductor outputs results to stdout. Here's how to capture and organize results:
+
+### Simple Output Capture
+```bash
+# Capture all output to a file
+conduct test.cfg > results.log 2>&1
+
+# View output and save to file
+conduct test.cfg 2>&1 | tee results.log
+```
+
+### Per-Client Results
+Results are prefixed with client ID (0, 1, 2, etc.):
+```
+0 phase received
+0 Command output from client 0
+1 phase received  
+1 Command output from client 1
+```
+
+### Creating Result Reports
+```bash
+#!/bin/bash
+# Example: Organize results by client and create summary
+
+mkdir -p results/$(date +%Y%m%d_%H%M%S)
+cd results/$(date +%Y%m%d_%H%M%S)
+
+# Run test and capture output
+conduct ../../test.cfg 2>&1 | tee full_output.log
+
+# Extract per-client results
+grep "^0 " full_output.log > client0_results.txt
+grep "^1 " full_output.log > client1_results.txt
+
+# Create summary
+echo "Test Summary - $(date)" > summary.txt
+echo "Total commands: $(grep -c "^[0-9] " full_output.log)" >> summary.txt
+echo "Successful: $(grep -c "^0 " full_output.log)" >> summary.txt
+```
+
+### Using Collect Phase for Files
+The Collect phase is designed to retrieve files from remote systems:
+
+```ini
+[Collect]
+# Copy remote files to conductor
+step1 = scp user@player:/tmp/test_results.tar.gz /local/results/
+step2 = scp user@player:/var/log/app.log /local/results/
+step3 = tar -czf /tmp/logs.tar.gz /var/log/myapp/
+```
+
 ## Next Steps
 
 - Read the full [Installation Guide](INSTALLATION_GUIDE.md)

@@ -12,8 +12,8 @@
 # notice, this list of conditions and the following disclaimer in the
 # documentation and/or other materials provided with the distribution.
 #
-# Neither the name of Neville-Neil Consulting nor the names of its 
-# contributors may be used to endorse or promote products derived from 
+# Neither the name of Neville-Neil Consulting nor the names of its
+# contributors may be used to endorse or promote products derived from
 # this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
@@ -37,19 +37,19 @@ import pickle
 import struct
 import socket
 
-RETVAL_OK=	0
-RETVAL_ERROR=	1
-RETVAL_BAD_CMD=	2
-RETVAL_DONE =	 65535
+RETVAL_OK = 0
+RETVAL_ERROR = 1
+RETVAL_BAD_CMD = 2
+RETVAL_DONE = 65535
 
-class RetVal():
 
-    def __init__(self, code = 0, message = ""):
+class RetVal:
+    def __init__(self, code=0, message=""):
         self.code = code
         self.message = message
 
     def send(self, sock):
         s = pickle.dumps(self)
-        length = struct.pack('!I', socket.htonl(len(s)))
-        s = length + s;
+        length = struct.pack("!I", socket.htonl(len(s)))
+        s = length + s
         sock.sendall(s)

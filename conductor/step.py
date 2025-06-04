@@ -12,8 +12,8 @@
 # notice, this list of conditions and the following disclaimer in the
 # documentation and/or other materials provided with the distribution.
 #
-# Neither the name of Neville-Neil Consulting nor the names of its 
-# contributors may be used to endorse or promote products derived from 
+# Neither the name of Neville-Neil Consulting nor the names of its
+# contributors may be used to endorse or promote products derived from
 # this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
@@ -39,34 +39,40 @@ import shlex
 
 from conductor import retval
 
-class Step():
 
+class Step:
     def __init__(self, command, spawn=False, timeout=30):
         self.args = shlex.split(command)
         self.spawn = spawn
         self.timeout = timeout
-        
+
     def run(self):
-        if self.spawn == True:
-                output = subprocess.Popen(self.args)
-                return retval.RetVal(0, "Spawned")
+        if self.spawn:
+            output = subprocess.Popen(self.args)
+            return retval.RetVal(0, "Spawned")
         else:
             try:
-                output = subprocess.check_output(self.args,
-                                                 timeout=self.timeout,
-                                                 universal_newlines=True)
+                output = subprocess.check_output(
+                    self.args, timeout=self.timeout, universal_newlines=True
+                )
             except subprocess.CalledProcessError as err:
-                print ("Code: ", err.returncode, "Command: ", err.cmd,
-                       "Output: ", err.output)
+                print(
+                    "Code: ",
+                    err.returncode,
+                    "Command: ",
+                    err.cmd,
+                    "Output: ",
+                    err.output,
+                )
                 ret = retval.RetVal(err.returncode, err.cmd)
-            except subprocess.TimeoutExpired as err:
-                print ("Timeout on: ", self.args)
+            except subprocess.TimeoutExpired:
+                print("Timeout on: ", self.args)
                 ret = retval.RetVal(0, "Timeout")
             else:
-                print ("Success: ", output)
+                print("Success: ", output)
                 ret = retval.RetVal(0, output)
             return ret
-            
+
     def ready(self):
         """Tell the server we're ready to go."""
         pass

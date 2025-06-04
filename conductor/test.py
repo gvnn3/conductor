@@ -12,8 +12,8 @@
 # notice, this list of conditions and the following disclaimer in the
 # documentation and/or other materials provided with the distribution.
 #
-# Neither the name of Neville-Neil Consulting nor the names of its 
-# contributors may be used to endorse or promote products derived from 
+# Neither the name of Neville-Neil Consulting nor the names of its
+# contributors may be used to endorse or promote products derived from
 # this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
@@ -33,7 +33,8 @@
 # Description: Top level object in the Conductor system.  Encodes all
 # the logic of getting the config file loaded and the clients setup.
 
-class ConductorTest():
+
+class ConductorTest:
     """Container for test phases in the conductor system."""
 
     def __init__(self):
@@ -41,6 +42,3 @@ class ConductorTest():
 
     def append(self, phase):
         self.phases.append(phase)
-
-        
-        
