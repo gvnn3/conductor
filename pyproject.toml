@@ -8,7 +8,7 @@ version = "0.0.1"
 description = "A framework for distributed testing"
 readme = "README.md"
 requires-python = ">=3.8"
-license = {text = "BSD-3-Clause"}
+license = "BSD-3-Clause"
 keywords = ["networking", "testing"]
 authors = [
     {name = "George V. Neville-Neil", email = "gnn@neville-neil.com"},
