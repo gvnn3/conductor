@@ -39,6 +39,10 @@ import configparser
 import sys
 import pickle
 import pickletools
+import argparse
+import os
+import logging
+import signal
 
 from conductor import config
 from conductor import phase
@@ -54,52 +58,212 @@ class Player():
     phases = []
     results = []
     
-    def __init__(self, command, key = None):
+    def __init__(self, bind_addr, bind_port, key=None):
+        self.bind_addr = bind_addr
+        self.bind_port = bind_port
+        self.logger = logging.getLogger(__name__)
+        
         self.cmdsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
         self.cmdsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.cmdsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-        self.cmdsock.bind(command)
-        self.cmdsock.listen(5)
+        try:
+            self.cmdsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        except AttributeError:
+            # SO_REUSEPORT not available on all platforms
+            pass
         
+        self.cmdsock.bind((bind_addr, bind_port))
+        self.cmdsock.listen(5)
+        self.logger.info(f"Player listening on {bind_addr}:{bind_port}")
+        
+    def shutdown(self):
+        """Gracefully shutdown the player."""
+        self.logger.info("Shutting down player...")
+        self.done = True
+        if self.cmdsock:
+            self.cmdsock.close()
+            
     def run(self):
         """Run through our work queue"""
         while not self.done:
-            sock,addr = self.cmdsock.accept()
-            data = sock.recv(65536)
-            message = pickle.loads(data)
-            if type(message) == config.Config:
-                self.config = message
-                ret = retval.RetVal(retval.RETVAL_OK,
-                                    "config received")
-                ret.send(sock)
-            elif type(message) == phase.Phase:
-                self.phases.append(message)
-                ret = retval.RetVal(retval.RETVAL_OK,
-                                    "phase received")
-                ret.send(sock)
-            elif type(message) == run.Run:
-                print ("RUN")
-                for next in self.phases:
-                    next.run()
-                    next.return_results()
-                self.phases = []
-            else:
-                ret = retval.RetVal(retval.RETVAL_BAD_CMD,
-                                    "no such command")
-                ret.send(sock)
-            sock.close()
+            try:
+                self.cmdsock.settimeout(1.0)  # Allow periodic checks for shutdown
+                try:
+                    sock, addr = self.cmdsock.accept()
+                    self.logger.debug(f"Connection from {addr}")
+                except socket.timeout:
+                    continue
+                
+                data = sock.recv(65536)
+                if not data:
+                    sock.close()
+                    continue
+                    
+                message = pickle.loads(data)
+                
+                if type(message) == config.Config:
+                    self.config = message
+                    self.logger.info("Configuration received")
+                    ret = retval.RetVal(retval.RETVAL_OK, "config received")
+                    ret.send(sock)
+                elif type(message) == phase.Phase:
+                    self.phases.append(message)
+                    self.logger.info(f"Phase received with {len(message.steps)} steps")
+                    ret = retval.RetVal(retval.RETVAL_OK, "phase received")
+                    ret.send(sock)
+                elif type(message) == run.Run:
+                    self.logger.info("RUN command received")
+                    for next_phase in self.phases:
+                        self.logger.info(f"Running phase with {len(next_phase.steps)} steps")
+                        next_phase.run()
+                        next_phase.return_results()
+                    self.phases = []
+                else:
+                    self.logger.warning(f"Unknown message type: {type(message)}")
+                    ret = retval.RetVal(retval.RETVAL_BAD_CMD, "no such command")
+                    ret.send(sock)
+                sock.close()
+            except KeyboardInterrupt:
+                self.logger.info("Received interrupt signal")
+                self.shutdown()
+                break
+            except Exception as e:
+                self.logger.error(f"Error handling connection: {e}")
+                if sock:
+                    sock.close()
 
+def setup_logging(verbose, quiet, log_file):
+    """Configure logging based on settings."""
+    if quiet:
+        level = logging.ERROR
+    elif verbose:
+        level = logging.DEBUG
+    else:
+        level = logging.INFO
+    
+    # Console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(level)
+    
+    # Format
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    console_handler.setFormatter(formatter)
+    
+    # Root logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(level)
+    root_logger.addHandler(console_handler)
+    
+    # File handler if specified
+    if log_file:
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(formatter)
+        root_logger.addHandler(file_handler)
+    
+    return logging.getLogger(__name__)
 
 def __main__():
-
+    parser = argparse.ArgumentParser(
+        description='Player - Execute commands from conductor',
+        epilog='Example: player -v config.cfg'
+    )
+    
+    parser.add_argument(
+        'config',
+        help='Player configuration file path'
+    )
+    
+    parser.add_argument(
+        '-b', '--bind',
+        default='0.0.0.0',
+        help='Address to bind to (default: 0.0.0.0)'
+    )
+    
+    parser.add_argument(
+        '-p', '--port',
+        type=int,
+        default=None,
+        help='Port to listen on (overrides config file)'
+    )
+    
+    parser.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        help='Enable verbose output'
+    )
+    
+    parser.add_argument(
+        '-q', '--quiet',
+        action='store_true',
+        help='Suppress all output except errors'
+    )
+    
+    parser.add_argument(
+        '-l', '--log-file',
+        help='Log output to file'
+    )
+    
+    parser.add_argument(
+        '--version',
+        action='version',
+        version='Player 1.0'
+    )
+    
+    args = parser.parse_args()
+    
+    # Setup logging
+    logger = setup_logging(args.verbose, args.quiet, args.log_file)
+    
+    # Check if config file exists
+    if not os.path.exists(args.config):
+        logger.error(f"Configuration file not found: {args.config}")
+        sys.exit(1)
+    
+    # Read configuration
+    logger.info(f"Reading configuration from: {args.config}")
     local_config = configparser.ConfigParser()
-    local_config.read(sys.argv[1]) # Cheap and sleazy for now
-
-    defaults = local_config['Master']
-    cmdport = int(defaults['cmdport'])
-
-    play = Player(('0.0.0.0', cmdport))
-    play.run()
+    
+    try:
+        local_config.read(args.config)
+    except Exception as e:
+        logger.error(f"Failed to read configuration: {e}")
+        sys.exit(1)
+    
+    # Get configuration values
+    try:
+        defaults = local_config['Master']
+        cmdport = args.port if args.port is not None else int(defaults['cmdport'])
+    except KeyError:
+        logger.error("Configuration missing [Master] section or cmdport setting")
+        sys.exit(1)
+    
+    # Create and run player
+    try:
+        play = Player(args.bind, cmdport)
+        
+        # Handle signals gracefully
+        def signal_handler(signum, frame):
+            logger.info(f"Received signal {signum}")
+            play.shutdown()
+            sys.exit(0)
+        
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+        
+        logger.info(f"Player started on {args.bind}:{cmdport}")
+        print(f"Player listening on {args.bind}:{cmdport}")
+        
+        play.run()
+        
+    except OSError as e:
+        logger.error(f"Failed to bind to {args.bind}:{cmdport}: {e}")
+        sys.exit(1)
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        sys.exit(1)
     
 if __name__ == "__main__":
     __main__()
