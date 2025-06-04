@@ -10,8 +10,7 @@ git clone https://github.com/benroeder/conductor.git
 cd conductor
 python3 -m venv venv
 source venv/bin/activate
-pip install setuptools configparser
-python setup.py install
+pip install .
 ```
 
 ## 2. Localhost Demo (2 minutes)

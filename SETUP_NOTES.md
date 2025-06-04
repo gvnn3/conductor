@@ -10,14 +10,11 @@ Conductor is a distributed systems test framework that orchestrates tests across
    python3 -m venv venv
    ```
 
-2. **Install Dependencies**
+2. **Install Conductor** (dependencies are handled automatically)
    ```bash
-   venv/bin/pip install setuptools configparser
-   ```
-
-3. **Install Conductor**
-   ```bash
-   venv/bin/python setup.py install
+   venv/bin/pip install .
+   # Or for development:
+   venv/bin/pip install -e .
    ```
 
 ## Issues Encountered and Solutions
