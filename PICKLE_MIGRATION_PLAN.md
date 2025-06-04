@@ -112,3 +112,4 @@ Since no backward compatibility is maintained:
 3. **Encryption**: TLS support for secure communication
 4. **Authentication**: Message signing or mutual TLS
 5. **Performance**: Connection pooling for better performance
+6. **Build System**: Replace setup.py with modern pyproject.toml to address deprecation warnings
