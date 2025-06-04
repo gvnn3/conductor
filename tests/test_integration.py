@@ -6,6 +6,7 @@ import threading
 import time
 import tempfile
 import os
+import struct
 from unittest.mock import patch
 
 from conductor.client import Client
@@ -215,6 +216,172 @@ class TestClientServerIntegration:
         
         assert result == test_message
         assert mock_socket.recv_calls > 2  # Should have taken multiple reads
+
+
+class TestRealConfigParsing:
+    """Test real configuration file parsing."""
+    
+    def test_client_parses_real_config_file(self):
+        """Test Client can parse a real configuration file."""
+        import tempfile
+        import configparser
+        
+        # Create a real config file
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.cfg', delete=False) as f:
+            f.write("""[Master]
+conductor = 10.0.0.1
+player = 10.0.0.2
+cmdport = 6970
+resultsport = 6971
+
+[Startup]
+step1 = echo "Starting test environment"
+step2 = mkdir -p /tmp/conductor_test
+spawn1 = sleep 5
+
+[Run]
+step1 = echo "Running tests"
+timeout10 = curl http://localhost:8080
+spawn2 = python -m http.server 8080
+
+[Collect]
+step1 = tar -czf /tmp/results.tgz /tmp/conductor_test
+
+[Reset]
+step1 = rm -rf /tmp/conductor_test
+""")
+            config_file = f.name
+        
+        try:
+            # Parse config and create client
+            config = configparser.ConfigParser()
+            config.read(config_file)
+            
+            client = Client(config)
+            
+            # Verify parsing worked correctly
+            assert client.conductor == '10.0.0.1'
+            assert client.player == '10.0.0.2'
+            assert client.cmdport == 6970
+            assert client.resultport == 6971
+            
+            # Check startup phase - spawn not parsed in startup
+            assert len(client.startup_phase.steps) == 3
+            assert client.startup_phase.steps[0].args == ['echo', 'Starting test environment']
+            assert client.startup_phase.steps[2].args == ['sleep', '5']
+            
+            # Check run phase - spawn and timeout are parsed here
+            assert len(client.run_phase.steps) == 3
+            assert client.run_phase.steps[0].args == ['echo', 'Running tests']
+            assert client.run_phase.steps[1].timeout == 10
+            assert client.run_phase.steps[2].spawn is True
+            
+        finally:
+            os.unlink(config_file)
+
+
+class TestRealProcessCommunication:
+    """Test real inter-process communication."""
+    
+    def test_player_style_socket_server(self):
+        """Test a simplified version of player socket handling."""
+        import threading
+        import pickle
+        import time
+        
+        server_ready = threading.Event()
+        received_phases = []
+        
+        def mock_player_server():
+            """Simplified player server that receives phases."""
+            server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            server_sock.bind(('localhost', 0))
+            _, port = server_sock.getsockname()
+            server_sock.listen(1)
+            
+            # Store port for client
+            mock_player_server.port = port
+            server_ready.set()
+            
+            # Accept one connection
+            conn, _ = server_sock.accept()
+            
+            # Read length header
+            length_data = b''
+            while len(length_data) < 4:
+                chunk = conn.recv(4 - len(length_data))
+                if not chunk:
+                    break
+                length_data += chunk
+            
+            if len(length_data) == 4:
+                # Read phase data
+                import struct
+                length = socket.ntohl(struct.unpack('!I', length_data)[0])
+                
+                phase_data = b''
+                while len(phase_data) < length:
+                    chunk = conn.recv(length - len(phase_data))
+                    if not chunk:
+                        break
+                    phase_data += chunk
+                
+                if len(phase_data) == length:
+                    phase = pickle.loads(phase_data)
+                    received_phases.append(phase)
+                    
+                    # Send response
+                    response = RetVal(0, "Phase received")
+                    response.send(conn)
+            
+            conn.close()
+            server_sock.close()
+        
+        # Start server
+        server_thread = threading.Thread(target=mock_player_server)
+        server_thread.start()
+        
+        # Wait for server to be ready
+        server_ready.wait(timeout=2)
+        assert hasattr(mock_player_server, 'port')
+        
+        # Create and send a phase
+        test_phase = Phase("localhost", 6971)
+        test_phase.append(Step("echo test"))
+        
+        # Connect and send
+        client_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_sock.connect(('localhost', mock_player_server.port))
+        
+        # Send phase using protocol
+        phase_data = pickle.dumps(test_phase)
+        length = struct.pack('!I', socket.htonl(len(phase_data)))
+        client_sock.sendall(length + phase_data)
+        
+        # Read response
+        response_length_data = b''
+        while len(response_length_data) < 4:
+            chunk = client_sock.recv(4 - len(response_length_data))
+            response_length_data += chunk
+        
+        response_length = socket.ntohl(struct.unpack('!I', response_length_data)[0])
+        response_data = b''
+        while len(response_data) < response_length:
+            chunk = client_sock.recv(response_length - len(response_data))
+            response_data += chunk
+        
+        response = pickle.loads(response_data)
+        
+        client_sock.close()
+        server_thread.join()
+        
+        # Verify
+        assert len(received_phases) == 1
+        assert len(received_phases[0].steps) == 1
+        assert received_phases[0].steps[0].args == ["echo", "test"]
+        assert response.code == 0
+        assert response.message == "Phase received"
 
 
 class TestEndToEndScenario:
