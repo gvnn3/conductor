@@ -34,13 +34,14 @@
 # conductor.
 
 import socket
-import pickle
+import json
 import struct
 
 from conductor import phase
 from conductor import step
 from conductor import run
 from conductor import retval
+from conductor.json_protocol import send_message, receive_message, MSG_PHASE, MSG_RUN, MSG_RESULT
 
 
 class Client:
@@ -86,14 +87,26 @@ class Client:
             exit()
 
         cmd.settimeout(1.0)
-        splat = pickle.dumps(current, pickle.HIGHEST_PROTOCOL)
-        cmd.sendall(splat)
-
-        message = self.len_recv(cmd)
-
-        if len(message) > 0:
-            ret = pickle.loads(message)
-            print(ret.code, ret.message)
+        
+        # Convert phase to JSON-serializable format
+        phase_data = {
+            "resulthost": current.resulthost,
+            "resultport": current.resultport,
+            "steps": [
+                {
+                    "command": " ".join(s.args),
+                    "spawn": s.spawn,
+                    "timeout": s.timeout
+                } for s in current.steps
+            ]
+        }
+        
+        send_message(cmd, MSG_PHASE, phase_data)
+        
+        # Receive response
+        msg_type, data = receive_message(cmd)
+        if msg_type == MSG_RESULT:
+            print(data.get("code", 0), data.get("message", ""))
         cmd.close()
 
     def doit(self):
@@ -106,8 +119,7 @@ class Client:
             exit()
 
         cmd.settimeout(1.0)
-        splat = pickle.dumps(run.Run(), pickle.HIGHEST_PROTOCOL)
-        cmd.sendall(splat)
+        send_message(cmd, MSG_RUN, {})
         cmd.close()
         # Setup the callback socket for the player now
         self.ressock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
@@ -121,14 +133,15 @@ class Client:
         done = False
         while not done:
             sock, addr = self.ressock.accept()
-            data = self.len_recv(sock)
-            message = pickle.loads(data)
-            if isinstance(message, retval.RetVal):
-                if message.code == retval.RETVAL_DONE:
+            msg_type, data = receive_message(sock)
+            if msg_type == MSG_RESULT:
+                code = data.get("code", 0)
+                message = data.get("message", "")
+                if code == retval.RETVAL_DONE:
                     print("done")
                     done = True
                 else:
-                    print(message.code, message.message)
+                    print(code, message)
             sock.close()
         self.ressock.close()
 
@@ -148,17 +161,3 @@ class Client:
         """Push the rset phase to the player"""
         self.download(self.reset_phase)
 
-    def len_recv(self, sock):
-        """Get the length of the message we're about to receive"""
-        buf = b""
-        retbuf = b""
-
-        while len(buf) < 4:
-            buf += sock.recv(4 - len(buf))
-
-        length = socket.ntohl(struct.unpack("!I", buf)[0])
-
-        while len(retbuf) < length:
-            retbuf += sock.recv(length - len(retbuf))
-
-        return retbuf

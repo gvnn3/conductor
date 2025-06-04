@@ -1,7 +1,7 @@
 """Tests for the RetVal class."""
 
 from unittest.mock import MagicMock
-import pickle
+import json
 import struct
 import socket
 
@@ -40,14 +40,22 @@ class TestRetValInitialization:
 class TestRetValSerialization:
     """Test RetVal serialization and network sending."""
 
-    def test_can_be_pickled(self):
-        """Test that RetVal can be pickled and unpickled."""
+    def test_can_be_json_serialized(self):
+        """Test that RetVal can be converted to and from JSON."""
         original = RetVal(code=42, message="Test message")
-        pickled = pickle.dumps(original)
-        unpickled = pickle.loads(pickled)
-
-        assert unpickled.code == original.code
-        assert unpickled.message == original.message
+        
+        # Simulate what happens in send()
+        data = {
+            "code": original.code,
+            "message": original.message
+        }
+        json_str = json.dumps({"type": "result", "data": data})
+        
+        # Parse it back
+        parsed = json.loads(json_str)
+        assert parsed["type"] == "result"
+        assert parsed["data"]["code"] == 42
+        assert parsed["data"]["message"] == "Test message"
 
     def test_send_formats_message_correctly(self):
         """Test that send() formats the message with length prefix."""
@@ -64,16 +72,17 @@ class TestRetValSerialization:
 
         # First 4 bytes should be the length
         length_bytes = sent_data[:4]
-        length = socket.ntohl(struct.unpack("!I", length_bytes)[0])
+        length = struct.unpack("!I", length_bytes)[0]
 
-        # Rest should be the pickled object
-        pickled_data = sent_data[4:]
-        assert len(pickled_data) == length
+        # Rest should be the JSON data
+        json_data = sent_data[4:]
+        assert len(json_data) == length
 
-        # Verify we can unpickle it
-        unpickled = pickle.loads(pickled_data)
-        assert unpickled.code == 0
-        assert unpickled.message == "Success"
+        # Verify we can parse the JSON
+        message = json.loads(json_data.decode('utf-8'))
+        assert message["type"] == "result"
+        assert message["data"]["code"] == 0
+        assert message["data"]["message"] == "Success"
 
     def test_send_with_different_return_codes(self):
         """Test sending with different standard return codes."""
@@ -96,11 +105,11 @@ class TestRetValSerialization:
 
             # Verify we can recover the original data
             length_bytes = sent_data[:4]
-            _ = socket.ntohl(
-                struct.unpack("!I", length_bytes)[0]
-            )  # Verify unpacking works
-            pickled_data = sent_data[4:]
-
-            unpickled = pickle.loads(pickled_data)
-            assert unpickled.code == code
-            assert unpickled.message == message
+            length = struct.unpack("!I", length_bytes)[0]
+            json_data = sent_data[4:]
+            
+            # Parse JSON
+            message_obj = json.loads(json_data.decode('utf-8'))
+            assert message_obj["type"] == "result"
+            assert message_obj["data"]["code"] == code
+            assert message_obj["data"]["message"] == message

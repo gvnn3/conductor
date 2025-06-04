@@ -33,9 +33,10 @@
 # Description: A return code object that can be pickled and sent back
 # to the conductor.
 
-import pickle
+import json
 import struct
 import socket
+from conductor.json_protocol import send_message, MSG_RESULT
 
 RETVAL_OK = 0
 RETVAL_ERROR = 1
@@ -49,7 +50,9 @@ class RetVal:
         self.message = message
 
     def send(self, sock):
-        s = pickle.dumps(self)
-        length = struct.pack("!I", socket.htonl(len(s)))
-        s = length + s
-        sock.sendall(s)
+        """Send this RetVal as a JSON message."""
+        data = {
+            "code": self.code,
+            "message": self.message
+        }
+        send_message(sock, MSG_RESULT, data)

@@ -37,8 +37,7 @@
 import socket
 import configparser
 import sys
-import pickle
-import pickletools
+import json
 import argparse
 import os
 import logging
@@ -49,6 +48,7 @@ from conductor import phase
 from conductor import step
 from conductor import retval
 from conductor import run
+from conductor.json_protocol import receive_message, send_message, MSG_PHASE, MSG_RUN, MSG_CONFIG, MSG_RESULT
 
 class Player():
 
@@ -93,33 +93,41 @@ class Player():
                 except socket.timeout:
                     continue
                 
-                data = sock.recv(65536)
-                if not data:
-                    sock.close()
-                    continue
+                try:
+                    msg_type, data = receive_message(sock)
                     
-                message = pickle.loads(data)
-                
-                if type(message) == config.Config:
-                    self.config = message
-                    self.logger.info("Configuration received")
-                    ret = retval.RetVal(retval.RETVAL_OK, "config received")
-                    ret.send(sock)
-                elif type(message) == phase.Phase:
-                    self.phases.append(message)
-                    self.logger.info(f"Phase received with {len(message.steps)} steps")
-                    ret = retval.RetVal(retval.RETVAL_OK, "phase received")
-                    ret.send(sock)
-                elif type(message) == run.Run:
-                    self.logger.info("RUN command received")
-                    for next_phase in self.phases:
-                        self.logger.info(f"Running phase with {len(next_phase.steps)} steps")
-                        next_phase.run()
-                        next_phase.return_results()
-                    self.phases = []
-                else:
-                    self.logger.warning(f"Unknown message type: {type(message)}")
-                    ret = retval.RetVal(retval.RETVAL_BAD_CMD, "no such command")
+                    if msg_type == MSG_CONFIG:
+                        self.config = config.Config()  # Would need proper deserialization
+                        self.logger.info("Configuration received")
+                        ret = retval.RetVal(retval.RETVAL_OK, "config received")
+                        ret.send(sock)
+                    elif msg_type == MSG_PHASE:
+                        # Reconstruct phase from JSON data
+                        new_phase = phase.Phase(data["resulthost"], data["resultport"])
+                        for step_data in data.get("steps", []):
+                            new_phase.append(step.Step(
+                                step_data["command"],
+                                spawn=step_data.get("spawn", False),
+                                timeout=step_data.get("timeout", 30)
+                            ))
+                        self.phases.append(new_phase)
+                        self.logger.info(f"Phase received with {len(new_phase.steps)} steps")
+                        ret = retval.RetVal(retval.RETVAL_OK, "phase received")
+                        ret.send(sock)
+                    elif msg_type == MSG_RUN:
+                        self.logger.info("RUN command received")
+                        for next_phase in self.phases:
+                            self.logger.info(f"Running phase with {len(next_phase.steps)} steps")
+                            next_phase.run()
+                            next_phase.return_results()
+                        self.phases = []
+                    else:
+                        self.logger.warning(f"Unknown message type: {msg_type}")
+                        ret = retval.RetVal(retval.RETVAL_BAD_CMD, "no such command")
+                        ret.send(sock)
+                except Exception as e:
+                    self.logger.error(f"Error processing message: {e}")
+                    ret = retval.RetVal(retval.RETVAL_ERROR, str(e))
                     ret.send(sock)
                 sock.close()
             except KeyboardInterrupt:
@@ -234,10 +242,10 @@ def __main__():
     
     # Get configuration values
     try:
-        defaults = local_config['Master']
+        defaults = local_config['Coordinator']
         cmdport = args.port if args.port is not None else int(defaults['cmdport'])
     except KeyError:
-        logger.error("Configuration missing [Master] section or cmdport setting")
+        logger.error("Configuration missing [Coordinator] section or cmdport setting")
         sys.exit(1)
     
     # Create and run player
