@@ -216,6 +216,20 @@ class TestClientCommunication:
         # Verify socket is stored
         assert client.ressock is mock_results_socket
     
+    @patch('socket.create_connection')
+    @patch('builtins.print')
+    def test_doit_handles_connection_failure(self, mock_print, mock_create_connection):
+        """Test that doit handles connection failures."""
+        client = self.create_test_client()
+        mock_create_connection.side_effect = socket.error("Connection refused")
+        
+        # Mock exit to prevent actual exit and raise exception instead
+        with patch('builtins.exit', side_effect=SystemExit):
+            with pytest.raises(SystemExit):
+                client.doit()
+        
+        mock_print.assert_called_once_with("Failed to connect to: ", 'localhost', 6970)
+    
     def test_results_receives_messages_until_done(self):
         """Test that results receives messages until RETVAL_DONE."""
         client = self.create_test_client()
