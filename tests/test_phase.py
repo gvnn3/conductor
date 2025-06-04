@@ -49,6 +49,13 @@ class TestPhaseStepManagement:
         assert phase.steps[0] is step1
         assert phase.steps[1] is step2
         assert phase.steps[2] is step3
+    
+    def test_load_method_exists(self):
+        """Test that load() placeholder method exists."""
+        phase = Phase("localhost", 6971)
+        # Should not raise an exception
+        result = phase.load()
+        assert result is None
 
 
 class TestPhaseExecution:
