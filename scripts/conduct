@@ -45,6 +45,7 @@ import logging
 
 # local imports
 from conductor import *
+from conductor.reporter import create_reporter
 
 def setup_logging(verbose, quiet):
     """Configure logging based on verbosity settings."""
@@ -62,9 +63,12 @@ def setup_logging(verbose, quiet):
     )
     return logging.getLogger(__name__)
 
-def run_phase(clients, phase_name, phase_methods):
+def run_phase(clients, phase_name, phase_methods, reporter=None):
     """Run a single phase across all clients."""
     logger = logging.getLogger(__name__)
+    
+    if reporter:
+        reporter.start_phase(phase_name)
     
     # Download phase
     logger.info(f"Downloading {phase_name} phase to all clients")
@@ -78,8 +82,16 @@ def run_phase(clients, phase_name, phase_methods):
     
     # Collect results
     logger.info(f"Collecting {phase_name} results from all clients")
-    for client in clients:
-        client.results()
+    for idx, client in enumerate(clients):
+        worker_name = f"worker_{idx}"  # TODO: Get actual worker name from config
+        if reporter:
+            reporter.start_worker(worker_name)
+        client.results(reporter)
+        if reporter:
+            reporter.end_worker()
+    
+    if reporter:
+        reporter.end_phase()
 
 def __main__():
     parser = argparse.ArgumentParser(
@@ -138,6 +150,18 @@ def __main__():
         version='Conductor 1.0'
     )
     
+    parser.add_argument(
+        '-f', '--format',
+        choices=['text', 'json'],
+        default='text',
+        help='Output format for results (default: text)'
+    )
+    
+    parser.add_argument(
+        '-o', '--output',
+        help='Output file for results (default: stdout)'
+    )
+    
     args = parser.parse_args()
     
     # Setup logging
@@ -163,6 +187,15 @@ def __main__():
     try:
         defaults = test_config['Test']
         trials = args.trials if args.trials is not None else int(defaults.get('trials', 1))
+        
+        # Get output format from config if not specified on command line
+        if args.format == 'text' and 'format' in defaults:
+            args.format = defaults.get('format', 'text')
+        
+        # Get output file from config if not specified on command line
+        if args.output is None and 'output' in defaults:
+            args.output = defaults.get('output')
+            
     except KeyError:
         logger.error("Configuration missing [Test] section")
         sys.exit(1)
@@ -215,6 +248,10 @@ def __main__():
     
     logger.info(f"Running {trials} trial(s) with phases: {', '.join(phases_to_run)}")
     
+    # Create reporter
+    reporter = create_reporter(args.format, args.output)
+    reporter.start_trials(trials, len(clients))
+    
     # Phase method mapping
     phase_methods = {
         'startup': lambda c: c.startup(),
@@ -226,13 +263,17 @@ def __main__():
     # Run trials
     for trial in range(trials):
         logger.info(f"Starting trial {trial + 1} of {trials}")
+        reporter.start_trial(trial + 1)
         
         for phase in phases_to_run:
             if phase in phase_methods:
-                run_phase(clients, phase, {'download': phase_methods[phase]})
+                run_phase(clients, phase, {'download': phase_methods[phase]}, reporter)
         
+        reporter.end_trial()
         logger.info(f"Completed trial {trial + 1} of {trials}")
     
+    # Finalize report
+    reporter.finalize()
     logger.info("All trials completed successfully")
 
 if __name__ == "__main__":

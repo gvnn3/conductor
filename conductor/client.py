@@ -128,7 +128,7 @@ class Client:
         self.ressock.bind(("0.0.0.0", self.resultport))
         self.ressock.listen(5)
 
-    def results(self):
+    def results(self, reporter=None):
         """Retrieve all the results from the player for the current phase"""
         done = False
         while not done:
@@ -137,11 +137,19 @@ class Client:
             if msg_type == MSG_RESULT:
                 code = data.get("code", 0)
                 message = data.get("message", "")
-                if code == retval.RETVAL_DONE:
-                    print("done")
-                    done = True
+                
+                # Report the result
+                if reporter:
+                    reporter.add_result(code, message)
                 else:
-                    print(code, message)
+                    # Fallback to traditional printing
+                    if code == retval.RETVAL_DONE:
+                        print("done")
+                    else:
+                        print(code, message)
+                
+                if code == retval.RETVAL_DONE:
+                    done = True
             sock.close()
         self.ressock.close()
 
