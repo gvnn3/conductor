@@ -89,7 +89,7 @@ def __main__():
     
     parser.add_argument(
         'config',
-        help='Master configuration file path'
+        help='Coordinator configuration file path'
     )
     
     parser.add_argument(

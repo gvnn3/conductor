@@ -2,7 +2,7 @@
 
 ## conduct - Orchestrate distributed tests
 
-The `conduct` command is the master controller that orchestrates tests across multiple player nodes.
+The `conduct` command is the coordinator controller that orchestrates tests across multiple player nodes.
 
 ### Synopsis
 
@@ -164,7 +164,7 @@ player -v machine_b.cfg
 2. Run conductor:
 ```bash
 # On conductor machine
-conduct -v -t 3 test_master.cfg
+conduct -v -t 3 test_coordinator.cfg
 ```
 
 ### Debugging Connection Issues

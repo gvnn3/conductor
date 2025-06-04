@@ -12,14 +12,14 @@
 
 ## Overview
 
-Conductor is a distributed testing framework that follows a master-worker pattern:
-- **Conductor (Master)**: Orchestrates tests across multiple nodes
+Conductor is a distributed testing framework that follows a coordinator-worker pattern:
+- **Conductor (Coordinator)**: Orchestrates tests across multiple nodes
 - **Player (Worker)**: Executes commands on remote systems
 
 ```
 ┌─────────────┐
 │  Conductor  │
-│  (Master)   │
+│(Coordinator)│
 └──────┬──────┘
        │ Commands (port 6970)
        │ Results (port 6971)
@@ -83,14 +83,14 @@ This creates links instead of copying files, allowing you to edit the source cod
 
 ## Server Setup (Conductor)
 
-The conductor is the master node that orchestrates the distributed tests.
+The conductor is the coordinator node that orchestrates the distributed tests.
 
-### 1. Create Master Configuration
+### 1. Create Coordinator Configuration
 
 Create a coordinator configuration file (e.g., `test_config.cfg`):
 
 ```ini
-# Master Test Configuration
+# Coordinator Test Configuration
 [Test]
 # Number of times to run the complete test cycle
 trials = 1
@@ -228,7 +228,7 @@ telnet <conductor_ip> 6971
 
 For testing the setup, create a localhost configuration:
 
-**`localhost_master.cfg`:**
+**`localhost_coordinator.cfg`:**
 ```ini
 [Test]
 trials = 1
@@ -276,7 +276,7 @@ You should see:
 
 In terminal 2:
 ```bash
-conduct localhost_master.cfg
+conduct localhost_coordinator.cfg
 ```
 
 You should see output from each phase as it executes.
@@ -363,7 +363,7 @@ Consider redirecting output to logs:
 player config.cfg > player.log 2>&1 &
 
 # Start conductor with logging
-conduct master.cfg > conductor.log 2>&1
+conduct coordinator.cfg > conductor.log 2>&1
 ```
 
 ## Best Practices
@@ -379,7 +379,7 @@ conduct master.cfg > conductor.log 2>&1
 
 Here's a complete example for testing a web application across multiple nodes:
 
-**`web_test_master.cfg`:**
+**`web_test_coordinator.cfg`:**
 ```ini
 [Test]
 trials = 3
@@ -408,7 +408,7 @@ player configs/monitor.cfg
 
 **Run the test:**
 ```bash
-conduct web_test_master.cfg
+conduct web_test_coordinator.cfg
 ```
 
 This will coordinate all machines to run the distributed test three times, collecting results after each run.

@@ -2,11 +2,11 @@
 
 ## Overview
 
-Conductor is a distributed testing framework designed to orchestrate tests across multiple networked systems. It follows a master-worker pattern where a central conductor controls multiple players executing commands.
+Conductor is a distributed testing framework designed to orchestrate tests across multiple networked systems. It follows a coordinator-worker pattern where a central conductor controls multiple players executing commands.
 
 ## System Components
 
-### 1. Conductor (Master)
+### 1. Conductor (Coordinator)
 - Central orchestration node
 - Reads test configurations
 - Manages test phases
@@ -29,7 +29,7 @@ Conductor is a distributed testing framework designed to orchestrate tests acros
 │                                                                 │
 │  ┌─────────────────┐                                          │
 │  │   Conductor     │                                          │
-│  │  (Master Node)  │                                          │
+│  │(Coordinator Node)│                                          │
 │  │                 │                                          │
 │  │ ┌─────────────┐ │                                          │
 │  │ │  test.cfg   │ │                                          │

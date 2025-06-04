@@ -19,7 +19,7 @@ class TestNetworkErrorHandling:
         test_dir = tempfile.mkdtemp()
 
         # Master config
-        master_config = os.path.join(test_dir, "master.cfg")
+        coordinator_config = os.path.join(test_dir, "coordinator.cfg")
 
         # Client config
         client_config = os.path.join(test_dir, "client.cfg")
@@ -43,7 +43,7 @@ step1 = echo "test"
 step1 = echo "test"
 """)
 
-        with open(master_config, "w") as f:
+        with open(coordinator_config, "w") as f:
             f.write(f"""[Test]
 trials = 1
 
@@ -51,16 +51,16 @@ trials = 1
 test_client = {client_config}
 """)
 
-        return master_config, client_config, test_dir
+        return coordinator_config, client_config, test_dir
 
     def test_conductor_handles_no_player_running(self):
         """Test conductor behavior when no player is running."""
-        master_config, client_config, test_dir = self.create_test_configs(21000)
+        coordinator_config, client_config, test_dir = self.create_test_configs(21000)
 
         try:
             # Run conductor without starting player
             result = subprocess.run(
-                [sys.executable, "scripts/conduct", master_config],
+                [sys.executable, "scripts/conduct", coordinator_config],
                 capture_output=True,
                 text=True,
                 timeout=5,
@@ -186,7 +186,7 @@ step1 = echo "test"
 
     def test_conductor_handles_player_disconnect_mid_test(self):
         """Test conductor behavior when player disconnects during test."""
-        master_config, client_config, test_dir = self.create_test_configs(21400)
+        coordinator_config, client_config, test_dir = self.create_test_configs(21400)
 
         try:
             # Start player
@@ -205,7 +205,7 @@ step1 = echo "test"
 
             def run_conductor():
                 result = subprocess.run(
-                    [sys.executable, "scripts/conduct", master_config],
+                    [sys.executable, "scripts/conduct", coordinator_config],
                     capture_output=True,
                     text=True,
                     timeout=10,
@@ -235,7 +235,7 @@ step1 = echo "test"
     @pytest.mark.slow
     def test_player_recovers_from_conductor_crash(self):
         """Test that player continues running after conductor crashes."""
-        master_config, client_config, test_dir = self.create_test_configs(21500)
+        coordinator_config, client_config, test_dir = self.create_test_configs(21500)
 
         try:
             # Start player
@@ -279,7 +279,7 @@ step1 = echo "test"
 
     def test_results_port_unavailable(self):
         """Test conductor behavior when results port is blocked."""
-        master_config, client_config, test_dir = self.create_test_configs(21600)
+        coordinator_config, client_config, test_dir = self.create_test_configs(21600)
 
         # Block the results port
         blocking_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -303,7 +303,7 @@ step1 = echo "test"
             try:
                 # Run conductor - should fail to bind results port
                 result = subprocess.run(
-                    [sys.executable, "scripts/conduct", master_config],
+                    [sys.executable, "scripts/conduct", coordinator_config],
                     capture_output=True,
                     text=True,
                     timeout=5,

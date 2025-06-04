@@ -45,9 +45,9 @@ cd tests/localhost
 
 ## Architecture Overview
 
-Conductor is a distributed testing framework following a master-worker pattern:
+Conductor is a distributed testing framework following a coordinator-worker pattern:
 
-- **Conductor (Master)**: Orchestrates tests across multiple nodes
+- **Conductor (Coordinator)**: Orchestrates tests across multiple nodes
 - **Player (Worker)**: Executes commands on remote systems
 
 ### Communication Protocol

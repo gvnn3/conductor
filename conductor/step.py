@@ -72,7 +72,7 @@ class Step:
                 ret = retval.RetVal(err.returncode, err.cmd)
             except subprocess.TimeoutExpired:
                 print("Timeout on: ", self.args)
-                ret = retval.RetVal(0, "Timeout")
+                ret = retval.RetVal(retval.RETVAL_ERROR, f"Command timed out after {self.timeout} seconds")
             else:
                 print("Success: ", output)
                 ret = retval.RetVal(0, output)

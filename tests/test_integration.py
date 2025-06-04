@@ -197,7 +197,7 @@ class TestClientServerIntegration:
 
         # Create a minimal client to test len_recv
         config = configparser.ConfigParser()
-        config["Master"] = {
+        config["Coordinator"] = {
             "conductor": "localhost",
             "player": "localhost",
             "cmdport": "6970",

@@ -20,8 +20,8 @@ class TestCLIIntegration:
         test_dir = tempfile.mkdtemp()
 
         # Master config
-        master_config = os.path.join(test_dir, "master.cfg")
-        with open(master_config, "w") as f:
+        coordinator_config = os.path.join(test_dir, "coordinator.cfg")
+        with open(coordinator_config, "w") as f:
             f.write("""[Test]
 trials = 1
 
@@ -53,7 +53,7 @@ step1 = echo "Integration test reset"
 """)
 
         # Update coordinator config with client path
-        with open(master_config, "w") as f:
+        with open(coordinator_config, "w") as f:
             f.write(f"""[Test]
 trials = 1
 
@@ -61,7 +61,7 @@ trials = 1
 test_worker = {client_config}
 """)
 
-        yield master_config, client_config, test_dir
+        yield coordinator_config, client_config, test_dir
 
         # Cleanup
         import shutil
@@ -86,7 +86,7 @@ test_worker = {client_config}
     @pytest.mark.slow
     def test_conduct_player_basic_interaction(self, test_configs):
         """Test basic conductor/player interaction."""
-        master_config, client_config, test_dir = test_configs
+        coordinator_config, client_config, test_dir = test_configs
 
         # Start player
         player_proc = subprocess.Popen(
@@ -102,7 +102,7 @@ test_worker = {client_config}
 
             # Run conductor
             conduct_result = subprocess.run(
-                [sys.executable, "scripts/conduct", "-v", master_config],
+                [sys.executable, "scripts/conduct", "-v", coordinator_config],
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -128,7 +128,7 @@ test_worker = {client_config}
     @pytest.mark.slow
     def test_conduct_with_phase_selection(self, test_configs):
         """Test conductor with specific phases only."""
-        master_config, client_config, test_dir = test_configs
+        coordinator_config, client_config, test_dir = test_configs
 
         # Start player
         player_proc = subprocess.Popen(
@@ -151,7 +151,7 @@ test_worker = {client_config}
                     "startup",
                     "reset",
                     "--",
-                    master_config,
+                    coordinator_config,
                 ],
                 capture_output=True,
                 text=True,
@@ -177,7 +177,7 @@ test_worker = {client_config}
     @pytest.mark.slow
     def test_conduct_with_multiple_trials(self, test_configs):
         """Test conductor with multiple trials."""
-        master_config, client_config, test_dir = test_configs
+        coordinator_config, client_config, test_dir = test_configs
 
         # Start player
         player_proc = subprocess.Popen(
@@ -193,7 +193,7 @@ test_worker = {client_config}
 
             # Run conductor with 3 trials
             conduct_result = subprocess.run(
-                [sys.executable, "scripts/conduct", "-t", "3", master_config],
+                [sys.executable, "scripts/conduct", "-t", "3", coordinator_config],
                 capture_output=True,
                 text=True,
                 timeout=20,
@@ -217,7 +217,7 @@ test_worker = {client_config}
     @pytest.mark.slow
     def test_player_with_custom_port(self, test_configs):
         """Test player with custom port override."""
-        master_config, client_config, test_dir = test_configs
+        coordinator_config, client_config, test_dir = test_configs
 
         # Create modified client config for conductor to use custom port
         custom_client_config = os.path.join(test_dir, "custom_client.cfg")
@@ -242,8 +242,8 @@ step1 = echo "Reset"
 """)
 
         # Update coordinator config
-        custom_master_config = os.path.join(test_dir, "custom_master.cfg")
-        with open(custom_master_config, "w") as f:
+        custom_coordinator_config = os.path.join(test_dir, "custom_coordinator.cfg")
+        with open(custom_coordinator_config, "w") as f:
             f.write(f"""[Test]
 trials = 1
 
@@ -265,7 +265,7 @@ test_worker = {custom_client_config}
 
             # Run conductor
             conduct_result = subprocess.run(
-                [sys.executable, "scripts/conduct", custom_master_config],
+                [sys.executable, "scripts/conduct", custom_coordinator_config],
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -282,7 +282,7 @@ test_worker = {custom_client_config}
     @pytest.mark.slow
     def test_player_graceful_shutdown(self, test_configs):
         """Test player handles signals gracefully."""
-        master_config, client_config, test_dir = test_configs
+        coordinator_config, client_config, test_dir = test_configs
 
         # Start player
         player_proc = subprocess.Popen(
@@ -316,13 +316,13 @@ test_worker = {custom_client_config}
     @pytest.mark.slow
     def test_conduct_dry_run_does_not_connect(self, test_configs):
         """Test that --dry-run doesn't actually connect to players."""
-        master_config, client_config, test_dir = test_configs
+        coordinator_config, client_config, test_dir = test_configs
 
         # Don't start any player
 
         # Run conductor with dry-run
         conduct_result = subprocess.run(
-            [sys.executable, "scripts/conduct", "--dry-run", master_config],
+            [sys.executable, "scripts/conduct", "--dry-run", coordinator_config],
             capture_output=True,
             text=True,
             timeout=5,

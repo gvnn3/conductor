@@ -111,7 +111,7 @@ step3 = tar -czf /tmp/results.tgz /tmp/results/
 
 To customize these examples for your environment:
 
-1. **Update IP addresses** in the [Master] section
+1. **Update IP addresses** in the [Coordinator] section
 2. **Modify commands** for your specific applications
 3. **Adjust timeouts** based on your test duration
 4. **Add more steps** as needed
@@ -121,7 +121,7 @@ To customize these examples for your environment:
 To create a new test configuration:
 
 1. Copy an example that's similar to your use case
-2. Update the [Master] section with your network details
+2. Update the [Coordinator] section with your network details
 3. Modify the phases (Startup, Run, Collect, Reset)
 4. Test with a single client first
 5. Scale up to multiple clients

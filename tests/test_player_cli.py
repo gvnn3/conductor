@@ -75,7 +75,7 @@ class TestPlayerCLIErrors:
             )
 
             assert result.returncode == 1
-            assert "Configuration missing [Master] section" in result.stderr
+            assert "Configuration missing [Coordinator] section" in result.stderr
         finally:
             os.unlink(config_file)
 
