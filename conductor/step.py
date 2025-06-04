@@ -71,7 +71,7 @@ class Step():
         """Tell the server we're ready to go."""
         pass
 
-    def wait(self):
+    def wait_ready(self):
         """Wait on the server"""
         pass
 

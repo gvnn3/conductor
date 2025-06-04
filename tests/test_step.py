@@ -119,11 +119,16 @@ class TestStepPlaceholderMethods:
         result = step.ready()
         assert result is None
     
+    def test_wait_ready_method_exists(self):
+        """Test that wait_ready() method exists and does nothing."""
+        step = Step("echo test")
+        # Should not raise an exception
+        result = step.wait_ready()
+        assert result is None
+    
     def test_wait_with_until_parameter_exists(self):
         """Test that wait(until) method exists and does nothing."""
         step = Step("echo test")
         # Should not raise an exception
-        # Note: There's a bug in step.py - two methods named 'wait'
-        # The second one (with parameter) overrides the first
         result = step.wait(60)
         assert result is None
