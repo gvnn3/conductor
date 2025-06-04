@@ -83,6 +83,7 @@ class Client():
         except:
             print("Failed to connect to: ", self.player, self.cmdport)
             exit()
+            
         cmd.settimeout(1.0)
         splat = pickle.dumps(current,pickle.HIGHEST_PROTOCOL)
         cmd.sendall(splat)
@@ -101,6 +102,7 @@ class Client():
         except:
             print("Failed to connect to: ", self.player, self.cmdport)
             exit()
+            
         cmd.settimeout(1.0)
         splat = pickle.dumps(run.Run(),pickle.HIGHEST_PROTOCOL)
         cmd.sendall(splat)

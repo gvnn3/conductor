@@ -116,3 +116,67 @@ class TestClientInitialization:
         # Reset phase
         assert len(client.reset_phase.steps) == 1
         assert client.reset_phase.steps[0].args == ['rm', '-rf', '/tmp/test']
+
+
+class TestClientCommunication:
+    """Test Client socket communication methods."""
+    
+    def create_test_client(self):
+        """Create a test client with minimal config."""
+        config = configparser.ConfigParser()
+        config['Master'] = {
+            'conductor': 'localhost',
+            'player': 'localhost',
+            'cmdport': '6970',
+            'resultsport': '6971'
+        }
+        config['Startup'] = {}
+        config['Run'] = {}
+        config['Collect'] = {}
+        config['Reset'] = {}
+        return Client(config)
+    
+    @patch('socket.create_connection')
+    def test_download_sends_phase_to_player(self, mock_create_connection):
+        """Test that download sends a phase to the player."""
+        client = self.create_test_client()
+        mock_socket = MagicMock()
+        mock_create_connection.return_value = mock_socket
+        
+        # Mock len_recv to return a pickled RetVal
+        retval = RetVal(0, "phase received")
+        client.len_recv = MagicMock(return_value=pickle.dumps(retval))
+        
+        # Create a phase to download
+        test_phase = Phase("localhost", 6971)
+        
+        # Call download
+        with patch('builtins.print') as mock_print:
+            client.download(test_phase)
+            mock_print.assert_called_once_with(0, "phase received")
+        
+        # Verify connection was made
+        mock_create_connection.assert_called_once_with(('localhost', 6970))
+        
+        # Verify data was sent (phase was pickled and sent)
+        mock_socket.sendall.assert_called_once()
+        
+        # Verify socket was closed
+        mock_socket.close.assert_called_once()
+    
+    @patch('socket.create_connection')
+    @patch('builtins.print')
+    def test_download_handles_connection_failure(self, mock_print, mock_create_connection):
+        """Test that download handles connection failures."""
+        client = self.create_test_client()
+        mock_create_connection.side_effect = socket.error("Connection refused")
+        
+        # Create a phase to download
+        test_phase = Phase("localhost", 6971)
+        
+        # Mock exit to prevent actual exit and raise exception instead
+        with patch('builtins.exit', side_effect=SystemExit):
+            with pytest.raises(SystemExit):
+                client.download(test_phase)
+        
+        mock_print.assert_called_once_with("Failed to connect to: ", 'localhost', 6970)
