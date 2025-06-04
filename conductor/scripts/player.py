@@ -1,0 +1,277 @@
+#!/usr/bin/env python3
+# Copyright (c) 2014, Neville-Neil Consulting
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+#
+# Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# Neither the name of Neville-Neil Consulting nor the names of its 
+# contributors may be used to endorse or promote products derived from 
+# this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# Author: George V. Neville-Neil
+#
+# Description: The Player listens on a well known port and executes
+# commands as they are passed in, returning the reults up the pipe.
+
+import socket
+import configparser
+import sys
+import json
+import argparse
+import os
+import logging
+import signal
+
+from conductor import config
+from conductor import phase
+from conductor import step
+from conductor import retval
+from conductor import run
+from conductor.json_protocol import receive_message, send_message, MSG_PHASE, MSG_RUN, MSG_CONFIG, MSG_RESULT
+
+class Player():
+
+    done = False
+    sock = None
+    config = None
+    phases = []
+    results = []
+    
+    def __init__(self, bind_addr, bind_port, key=None):
+        self.bind_addr = bind_addr
+        self.bind_port = bind_port
+        self.logger = logging.getLogger(__name__)
+        
+        self.cmdsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+        self.cmdsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            self.cmdsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        except AttributeError:
+            # SO_REUSEPORT not available on all platforms
+            pass
+        
+        self.cmdsock.bind((bind_addr, bind_port))
+        self.cmdsock.listen(5)
+        self.logger.info(f"Player listening on {bind_addr}:{bind_port}")
+        
+    def shutdown(self):
+        """Gracefully shutdown the player."""
+        self.logger.info("Shutting down player...")
+        self.done = True
+        if self.cmdsock:
+            self.cmdsock.close()
+            
+    def run(self):
+        """Run through our work queue"""
+        while not self.done:
+            try:
+                self.cmdsock.settimeout(1.0)  # Allow periodic checks for shutdown
+                try:
+                    sock, addr = self.cmdsock.accept()
+                    self.logger.debug(f"Connection from {addr}")
+                except socket.timeout:
+                    continue
+                
+                try:
+                    msg_type, data = receive_message(sock)
+                    
+                    if msg_type == MSG_CONFIG:
+                        self.config = config.Config()  # Would need proper deserialization
+                        self.logger.info("Configuration received")
+                        ret = retval.RetVal(retval.RETVAL_OK, "config received")
+                        ret.send(sock)
+                    elif msg_type == MSG_PHASE:
+                        # Reconstruct phase from JSON data
+                        new_phase = phase.Phase(data["resulthost"], data["resultport"])
+                        for step_data in data.get("steps", []):
+                            new_phase.append(step.Step(
+                                step_data["command"],
+                                spawn=step_data.get("spawn", False),
+                                timeout=step_data.get("timeout", 30)
+                            ))
+                        self.phases.append(new_phase)
+                        self.logger.info(f"Phase received with {len(new_phase.steps)} steps")
+                        ret = retval.RetVal(retval.RETVAL_OK, "phase received")
+                        ret.send(sock)
+                    elif msg_type == MSG_RUN:
+                        self.logger.info("RUN command received")
+                        for next_phase in self.phases:
+                            self.logger.info(f"Running phase with {len(next_phase.steps)} steps")
+                            next_phase.run()
+                            next_phase.return_results()
+                        self.phases = []
+                    else:
+                        self.logger.warning(f"Unknown message type: {msg_type}")
+                        ret = retval.RetVal(retval.RETVAL_BAD_CMD, "no such command")
+                        ret.send(sock)
+                except Exception as e:
+                    self.logger.error(f"Error processing message: {e}")
+                    ret = retval.RetVal(retval.RETVAL_ERROR, str(e))
+                    ret.send(sock)
+                sock.close()
+            except KeyboardInterrupt:
+                self.logger.info("Received interrupt signal")
+                self.shutdown()
+                break
+            except Exception as e:
+                self.logger.error(f"Error handling connection: {e}")
+                if sock:
+                    sock.close()
+
+def setup_logging(verbose, quiet, log_file):
+    """Configure logging based on settings."""
+    if quiet:
+        level = logging.ERROR
+    elif verbose:
+        level = logging.DEBUG
+    else:
+        level = logging.INFO
+    
+    # Console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(level)
+    
+    # Format
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    console_handler.setFormatter(formatter)
+    
+    # Root logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(level)
+    root_logger.addHandler(console_handler)
+    
+    # File handler if specified
+    if log_file:
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(formatter)
+        root_logger.addHandler(file_handler)
+    
+    return logging.getLogger(__name__)
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Player - Execute commands from conductor',
+        epilog='Example: player -v config.cfg'
+    )
+    
+    parser.add_argument(
+        'config',
+        help='Player configuration file path'
+    )
+    
+    parser.add_argument(
+        '-b', '--bind',
+        default='0.0.0.0',
+        help='Address to bind to (default: 0.0.0.0)'
+    )
+    
+    parser.add_argument(
+        '-p', '--port',
+        type=int,
+        default=None,
+        help='Port to listen on (overrides config file)'
+    )
+    
+    parser.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        help='Enable verbose output'
+    )
+    
+    parser.add_argument(
+        '-q', '--quiet',
+        action='store_true',
+        help='Suppress all output except errors'
+    )
+    
+    parser.add_argument(
+        '-l', '--log-file',
+        help='Log output to file'
+    )
+    
+    parser.add_argument(
+        '--version',
+        action='version',
+        version='Player 1.0'
+    )
+    
+    args = parser.parse_args()
+    
+    # Setup logging
+    logger = setup_logging(args.verbose, args.quiet, args.log_file)
+    
+    # Check if config file exists
+    if not os.path.exists(args.config):
+        logger.error(f"Configuration file not found: {args.config}")
+        sys.exit(1)
+    
+    # Read configuration
+    logger.info(f"Reading configuration from: {args.config}")
+    local_config = configparser.ConfigParser()
+    
+    try:
+        local_config.read(args.config)
+    except Exception as e:
+        logger.error(f"Failed to read configuration: {e}")
+        sys.exit(1)
+    
+    # Get configuration values
+    try:
+        defaults = local_config['Coordinator']
+        cmdport = args.port if args.port is not None else int(defaults['cmdport'])
+    except KeyError:
+        logger.error("Configuration missing [Coordinator] section or cmdport setting")
+        sys.exit(1)
+    
+    # Create and run player
+    try:
+        play = Player(args.bind, cmdport)
+        
+        # Handle signals gracefully
+        def signal_handler(signum, frame):
+            logger.info(f"Received signal {signum}")
+            play.shutdown()
+            sys.exit(0)
+        
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+        
+        logger.info(f"Player started on {args.bind}:{cmdport}")
+        print(f"Player listening on {args.bind}:{cmdport}")
+        
+        play.run()
+        
+    except OSError as e:
+        logger.error(f"Failed to bind to {args.bind}:{cmdport}: {e}")
+        sys.exit(1)
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        sys.exit(1)
+    
+if __name__ == "__main__":
+    main()
