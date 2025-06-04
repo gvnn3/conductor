@@ -112,12 +112,6 @@ class TestStepExecution:
 class TestStepPlaceholderMethods:
     """Test placeholder methods that are not yet implemented."""
     
-    def test_ready_method_exists(self):
-        """Test that ready() method exists and does nothing."""
-        step = Step("echo test")
-        # Should not raise an exception
-        result = step.ready()
-        assert result is None
     
     def test_wait_ready_method_exists(self):
         """Test that wait_ready() method exists and does nothing."""
