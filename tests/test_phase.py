@@ -98,3 +98,62 @@ class TestPhaseExecution:
         
         # Should complete without error and have no results
         assert len(phase.results) == 0
+
+
+class TestPhaseResultsReporting:
+    """Test Phase results reporting functionality."""
+    
+    @patch('socket.create_connection')
+    def test_return_results_sends_all_results(self, mock_create_connection):
+        """Test that return_results sends all results to conductor."""
+        phase = Phase("localhost", 6971)
+        
+        # Add some results
+        phase.results = [
+            RetVal(0, "Step 1 success"),
+            RetVal(1, "Step 2 failed"),
+            RetVal(0, "Step 3 success")
+        ]
+        
+        # Create mock sockets
+        mock_sockets = [MagicMock() for _ in range(4)]  # 3 results + 1 done message
+        mock_create_connection.side_effect = mock_sockets
+        
+        # Call return_results
+        phase.return_results()
+        
+        # Verify socket connections were created
+        expected_calls = [call(("localhost", 6971)) for _ in range(4)]
+        mock_create_connection.assert_has_calls(expected_calls)
+        
+        # Verify each result was sent
+        for i, result in enumerate(phase.results):
+            # The result's send method should have been called with the socket
+            mock_sockets[i].sendall.assert_called_once()
+            mock_sockets[i].close.assert_called_once()
+        
+        # Verify DONE message was sent
+        mock_sockets[3].sendall.assert_called_once()
+        mock_sockets[3].close.assert_called_once()
+    
+    @patch('socket.create_connection')
+    def test_return_results_with_no_results(self, mock_create_connection):
+        """Test that return_results still sends DONE with no results."""
+        phase = Phase("localhost", 6971)
+        
+        # No results
+        phase.results = []
+        
+        # Create mock socket for DONE message
+        mock_socket = MagicMock()
+        mock_create_connection.return_value = mock_socket
+        
+        # Call return_results
+        phase.return_results()
+        
+        # Should only create one connection for DONE message
+        mock_create_connection.assert_called_once_with(("localhost", 6971))
+        
+        # Verify DONE message was sent
+        mock_socket.sendall.assert_called_once()
+        mock_socket.close.assert_called_once()
