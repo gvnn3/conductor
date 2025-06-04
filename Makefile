@@ -34,7 +34,7 @@ install: venv ## Install conductor in development mode
 
 .PHONY: install-dev
 install-dev: install ## Install development dependencies
-	$(VENV_BIN)/pip install ruff mypy
+	$(VENV_BIN)/pip install ruff mypy hypothesis
 
 .PHONY: clean
 clean: ## Clean build artifacts and cache
@@ -64,6 +64,10 @@ test-cli: ## Run CLI-specific tests
 .PHONY: test-file
 test-file: ## Run specific test file (use TEST=filename)
 	$(VENV_BIN)/pytest $(PYTEST_OPTS) $(TEST)
+
+.PHONY: test-hypothesis
+test-hypothesis: ## Run property-based tests with Hypothesis
+	$(VENV_BIN)/pytest $(PYTEST_OPTS) $(TEST_DIR)/test_hypothesis.py $(TEST_DIR)/test_step_edge_cases.py
 
 .PHONY: coverage
 coverage: ## Run tests with coverage report

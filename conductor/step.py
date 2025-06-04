@@ -42,7 +42,12 @@ from conductor import retval
 
 class Step:
     def __init__(self, command, spawn=False, timeout=30):
-        self.args = shlex.split(command)
+        try:
+            self.args = shlex.split(command)
+        except ValueError as e:
+            # Handle invalid shell syntax like unclosed quotes
+            # Fall back to simple split
+            self.args = command.split()
         self.spawn = spawn
         self.timeout = timeout
 
