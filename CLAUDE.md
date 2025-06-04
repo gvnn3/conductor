@@ -8,12 +8,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 # Create/activate virtual environment
 python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install dependencies
-venv/bin/pip install setuptools configparser pytest pytest-cov pytest-mock
+# Install conductor with development dependencies
+pip install -e ".[dev]"
 
-# Install conductor in development mode
-venv/bin/python setup.py install
+# This installs:
+# - conductor package in editable mode
+# - configparser (required dependency)
+# - pytest, pytest-cov, pytest-mock, hypothesis (dev dependencies)
 ```
 
 ### Running Tests

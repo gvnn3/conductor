@@ -24,8 +24,8 @@ the cooperation of several networked devices.
 
 ## Requirements ##
 
-- Python 3.6 or higher
-- setuptools
+- Python 3.8 or higher
+- pip (for installation)
 - Network connectivity between conductor and players
 
 ## Documentation ##
@@ -47,8 +47,11 @@ cd conductor
 python3 -m venv venv
 source venv/bin/activate
 
-# Install
-python setup.py install
+# Install using pip (modern method)
+pip install .
+
+# Or install in development mode
+pip install -e .
 ```
 
 For detailed installation instructions, see the [Installation Guide](INSTALLATION_GUIDE.md).

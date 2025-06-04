@@ -105,6 +105,14 @@ Since no backward compatibility is maintained:
 2. Cannot mix old pickle-based and new JSON-based components
 3. Clean deployment required (no rolling updates)
 
+## Completed Enhancements
+
+1. **JSON Protocol**: Replaced pickle with secure JSON messaging (✓)
+2. **Protocol Versioning**: Added version field to all messages (✓)
+3. **Message Size Limits**: Configurable size limits with 100MB default (✓)
+4. **JSON Results Output**: Added -f json option for structured test results (✓)
+5. **Build System Modernization**: Replaced setup.py with pyproject.toml (✓)
+
 ## Future Enhancements
 
 1. **Message Validation**: Add JSON schema validation
@@ -112,4 +120,3 @@ Since no backward compatibility is maintained:
 3. **Encryption**: TLS support for secure communication
 4. **Authentication**: Message signing or mutual TLS
 5. **Performance**: Connection pooling for better performance
-6. **Build System**: Replace setup.py with modern pyproject.toml to address deprecation warnings

@@ -33,18 +33,13 @@ Conductor is a distributed testing framework that follows a coordinator-worker p
 ## Prerequisites
 
 ### System Requirements
-- Python 3.6 or higher
+- Python 3.8 or higher
+- pip (Python package installer)
 - Network connectivity between conductor and all players
 - Open ports: 6970 (commands) and 6971 (results) by default
 
 ### Python Dependencies
-```bash
-# Required packages
-pip install setuptools configparser
-
-# Optional for testing
-pip install pytest pytest-cov pytest-mock
-```
+The only required dependency is `configparser`, which will be installed automatically.
 
 ## Installation
 
@@ -62,24 +57,26 @@ python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-3. Install dependencies:
+3. Install conductor:
 ```bash
-pip install setuptools configparser
+# For regular use
+pip install .
+
+# For development (editable install)
+pip install -e .
 ```
 
-4. Install conductor:
-```bash
-python setup.py install
-```
+The installation will automatically handle all dependencies.
 
-### Method 2: Development Mode
+### Method 2: Install with Additional Development Tools
 
 For development or testing:
 ```bash
-python setup.py develop
+# Install with development dependencies
+pip install -e ".[dev]"
 ```
 
-This creates links instead of copying files, allowing you to edit the source code.
+This installs conductor in editable mode along with testing tools like pytest and hypothesis.
 
 ## Server Setup (Conductor)
 
