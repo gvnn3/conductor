@@ -193,9 +193,11 @@ client2 = {client2_config.name}
             )
             
             assert result.returncode == 0
-            assert 'DRY RUN MODE' in result.stdout
-            assert 'Would run 2 trial(s) with 2 client(s)' in result.stdout
-            assert 'Phases: [\'all\']' in result.stdout
+            # Check both stdout and stderr as logging may go to stderr
+            output = result.stdout + result.stderr
+            assert 'DRY RUN MODE' in output
+            assert 'Would run 2 trial(s) with 2 client(s)' in output
+            assert "Phases: ['all']" in output
         finally:
             os.unlink(master)
             os.unlink(client1)
@@ -213,7 +215,8 @@ client2 = {client2_config.name}
             )
             
             assert result.returncode == 0
-            assert 'Would run 5 trial(s)' in result.stdout
+            output = result.stdout + result.stderr
+            assert 'Would run 5 trial(s)' in output
         finally:
             os.unlink(master)
             os.unlink(client1)
@@ -231,7 +234,8 @@ client2 = {client2_config.name}
             )
             
             assert result.returncode == 0
-            assert "Phases: ['startup']" in result.stdout
+            output = result.stdout + result.stderr
+            assert "Phases: ['startup']" in output
         finally:
             os.unlink(master)
             os.unlink(client1)
@@ -249,7 +253,8 @@ client2 = {client2_config.name}
             )
             
             assert result.returncode == 0
-            assert "Phases: ['startup', 'reset']" in result.stdout
+            output = result.stdout + result.stderr
+            assert "Phases: ['startup', 'reset']" in output
         finally:
             os.unlink(master)
             os.unlink(client1)
@@ -267,7 +272,8 @@ client2 = {client2_config.name}
             )
             
             assert result.returncode == 0
-            assert 'Would run 2 trial(s) with 1 client(s)' in result.stdout
+            output = result.stdout + result.stderr
+            assert 'Would run 2 trial(s) with 1 client(s)' in output
         finally:
             os.unlink(master)
             os.unlink(client1)

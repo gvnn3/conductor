@@ -1,58 +1,58 @@
-"""Tests for the Test class."""
+"""Tests for the ConductorTest class."""
 
 import pytest
 from unittest.mock import MagicMock
 import pickle
 
-from conductor.test import Test
+from conductor.test import ConductorTest
 from conductor.phase import Phase
 
 
-class TestTestClass:
-    """Test the Test class functionality."""
+class TestConductorTestClass:
+    """Test the ConductorTest class functionality."""
     
     def test_initialization(self):
-        """Test that Test initializes with empty phases list."""
-        test = Test()
-        assert test.phases == []
-        assert isinstance(test.phases, list)
+        """Test that ConductorTest initializes with empty phases list."""
+        conductor_test = ConductorTest()
+        assert conductor_test.phases == []
+        assert isinstance(conductor_test.phases, list)
     
     def test_append_adds_phase(self):
         """Test that append adds a phase to the phases list."""
-        test = Test()
+        conductor_test = ConductorTest()
         phase = MagicMock(spec=Phase)
         
-        test.append(phase)
+        conductor_test.append(phase)
         
-        assert len(test.phases) == 1
-        assert test.phases[0] is phase
+        assert len(conductor_test.phases) == 1
+        assert conductor_test.phases[0] is phase
     
     def test_append_multiple_phases(self):
         """Test appending multiple phases maintains order."""
-        test = Test()
+        conductor_test = ConductorTest()
         phase1 = MagicMock(spec=Phase)
         phase2 = MagicMock(spec=Phase)
         phase3 = MagicMock(spec=Phase)
         
-        test.append(phase1)
-        test.append(phase2)
-        test.append(phase3)
+        conductor_test.append(phase1)
+        conductor_test.append(phase2)
+        conductor_test.append(phase3)
         
-        assert len(test.phases) == 3
-        assert test.phases[0] is phase1
-        assert test.phases[1] is phase2
-        assert test.phases[2] is phase3
+        assert len(conductor_test.phases) == 3
+        assert conductor_test.phases[0] is phase1
+        assert conductor_test.phases[1] is phase2
+        assert conductor_test.phases[2] is phase3
     
     def test_can_be_pickled(self):
-        """Test that Test can be pickled for serialization."""
-        test = Test()
+        """Test that ConductorTest can be pickled for serialization."""
+        conductor_test = ConductorTest()
         phase = MagicMock(spec=Phase)
-        test.append(phase)
+        conductor_test.append(phase)
         
-        # Note: MagicMock can't be pickled, so we test with empty Test
-        empty_test = Test()
-        pickled = pickle.dumps(empty_test)
+        # Note: MagicMock can't be pickled, so we test with empty ConductorTest
+        empty_conductor_test = ConductorTest()
+        pickled = pickle.dumps(empty_conductor_test)
         unpickled = pickle.loads(pickled)
         
-        assert isinstance(unpickled, Test)
+        assert isinstance(unpickled, ConductorTest)
         assert unpickled.phases == []

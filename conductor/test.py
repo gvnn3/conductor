@@ -33,7 +33,8 @@
 # Description: Top level object in the Conductor system.  Encodes all
 # the logic of getting the config file loaded and the clients setup.
 
-class Test():
+class ConductorTest():
+    """Container for test phases in the conductor system."""
 
     def __init__(self):
         self.phases = []
