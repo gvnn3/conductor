@@ -152,11 +152,11 @@ class TestRealNetworkCommunication:
 
         # Verify data was received
         assert len(received_data) == 1
-        import pickle
+        import json
 
-        received_retval = pickle.loads(received_data[0])
-        assert received_retval.code == 42
-        assert received_retval.message == "Test message"
+        received_data_dict = json.loads(received_data[0].decode('utf-8'))
+        assert received_data_dict["code"] == 42
+        assert received_data_dict["message"] == "Test message"
 
 
 class TestClientServerIntegration:
@@ -290,7 +290,7 @@ class TestRealProcessCommunication:
     def test_player_style_socket_server(self):
         """Test a simplified version of player socket handling."""
         import threading
-        import pickle
+        import json
 
         server_ready = threading.Event()
         received_phases = []
@@ -332,8 +332,9 @@ class TestRealProcessCommunication:
                     phase_data += chunk
 
                 if len(phase_data) == length:
-                    phase = pickle.loads(phase_data)
-                    received_phases.append(phase)
+                    # For this test, we'll simulate receiving a simplified phase structure
+                    phase_dict = json.loads(phase_data.decode('utf-8'))
+                    received_phases.append(phase_dict)
 
                     # Send response
                     response = RetVal(0, "Phase received")
@@ -358,8 +359,9 @@ class TestRealProcessCommunication:
         client_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_sock.connect(("localhost", mock_player_server.port))
 
-        # Send phase using protocol
-        phase_data = pickle.dumps(test_phase)
+        # Send phase using JSON protocol  
+        phase_dict = {"steps": [{"command": "echo test"}]}
+        phase_data = json.dumps(phase_dict).encode('utf-8')
         length = struct.pack("!I", socket.htonl(len(phase_data)))
         client_sock.sendall(length + phase_data)
 
@@ -375,17 +377,17 @@ class TestRealProcessCommunication:
             chunk = client_sock.recv(response_length - len(response_data))
             response_data += chunk
 
-        response = pickle.loads(response_data)
+        response_dict = json.loads(response_data.decode('utf-8'))
 
         client_sock.close()
         server_thread.join()
 
         # Verify
         assert len(received_phases) == 1
-        assert len(received_phases[0].steps) == 1
-        assert received_phases[0].steps[0].args == ["echo", "test"]
-        assert response.code == 0
-        assert response.message == "Phase received"
+        assert len(received_phases[0]["steps"]) == 1
+        assert received_phases[0]["steps"][0]["command"] == "echo test"
+        assert response_dict["code"] == 0
+        assert response_dict["message"] == "Phase received"
 
 
 class TestEndToEndScenario:
