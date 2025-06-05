@@ -35,7 +35,11 @@ class TestConfigExtendedEdgeCases:
 
         # Values should be stored as-is
         assert config.host == host
-        assert config.port == port
+        # Handle NaN case - NaN != NaN in Python
+        if isinstance(port, float) and port != port:  # NaN check
+            assert isinstance(config.port, float) and config.port != config.port
+        else:
+            assert config.port == port
 
     @given(
         hosts=st.lists(st.text(), min_size=0, max_size=10),
