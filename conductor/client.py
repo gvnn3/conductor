@@ -115,11 +115,6 @@ class Client:
         for i in config["Reset"]:
             self.reset_phase.append(step.Step(config["Reset"][i]))
 
-        # Create aliases for backward compatibility
-        self.startup = self.startup_phase
-        self.run = self.run_phase
-        self.collect = self.collect_phase
-        self.reset = self.reset_phase
 
     def download(self, current):
         """Send a phase down to the player"""

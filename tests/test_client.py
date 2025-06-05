@@ -4,7 +4,6 @@ import pytest
 from unittest.mock import MagicMock, patch, call
 import configparser
 import socket
-import pickle
 import struct
 
 from conductor.client import Client
@@ -30,8 +29,8 @@ class TestClientInitialization:
         }
         config["Run"] = {
             "step1": 'echo "Running"',
-            "spawn1": "iperf -s",
-            "timeout30": "wget http://example.com",
+            "step2": "spawn:iperf -s",
+            "step3": "timeout30:wget http://example.com",
         }
         config["Collect"] = {"step1": "tar -czf results.tgz /tmp/test"}
         config["Reset"] = {"step1": "rm -rf /tmp/test"}
@@ -136,15 +135,15 @@ class TestClientCommunication:
         return Client(config)
 
     @patch("socket.create_connection")
-    def test_download_sends_phase_to_player(self, mock_create_connection):
+    @patch("conductor.client.receive_message")
+    def test_download_sends_phase_to_player(self, mock_receive_message, mock_create_connection):
         """Test that download sends a phase to the player."""
         client = self.create_test_client()
         mock_socket = MagicMock()
         mock_create_connection.return_value = mock_socket
 
-        # Mock len_recv to return a pickled RetVal
-        retval = RetVal(0, "phase received")
-        client.len_recv = MagicMock(return_value=pickle.dumps(retval))
+        # Mock receive_message to return JSON response
+        mock_receive_message.return_value = ("result", {"code": 0, "message": "phase received"})
 
         # Create a phase to download
         test_phase = Phase("localhost", 6971)
@@ -157,7 +156,7 @@ class TestClientCommunication:
         # Verify connection was made
         mock_create_connection.assert_called_once_with(("localhost", 6970))
 
-        # Verify data was sent (phase was pickled and sent)
+        # Verify data was sent
         mock_socket.sendall.assert_called_once()
 
         # Verify socket was closed
@@ -246,7 +245,8 @@ class TestClientCommunication:
         )
         assert mock_print.call_args_list[1][0][0] == "Error:"
 
-    def test_results_receives_messages_until_done(self):
+    @patch("conductor.client.receive_message")
+    def test_results_receives_messages_until_done(self, mock_receive_message):
         """Test that results receives messages until RETVAL_DONE."""
         client = self.create_test_client()
 
@@ -266,16 +266,12 @@ class TestClientCommunication:
             (mock_conn3, ("127.0.0.1", 12347)),
         ]
 
-        # Mock len_recv to return different messages
-        def len_recv_side_effect(sock):
-            if sock == mock_conn1:
-                return pickle.dumps(RetVal(0, "Step 1 complete"))
-            elif sock == mock_conn2:
-                return pickle.dumps(RetVal(1, "Step 2 failed"))
-            elif sock == mock_conn3:
-                return pickle.dumps(RetVal(RETVAL_DONE, "All done"))
-
-        client.len_recv = MagicMock(side_effect=len_recv_side_effect)
+        # Mock receive_message to return different messages
+        mock_receive_message.side_effect = [
+            ("result", {"code": 0, "message": "Step 1 complete"}),
+            ("result", {"code": 1, "message": "Step 2 failed"}),
+            ("result", {"code": RETVAL_DONE, "message": "All done"}),
+        ]
 
         # Call results
         with patch("builtins.print") as mock_print:
@@ -365,7 +361,7 @@ class TestClientLenRecv:
 
         # Create test message
         test_data = b"Hello, World!"
-        length = struct.pack("!I", socket.htonl(len(test_data)))
+        length = struct.pack("!I", len(test_data))
 
         # Mock socket that returns data in chunks
         mock_socket = MagicMock()
@@ -390,7 +386,7 @@ class TestClientLenRecv:
 
         # Create test message
         test_data = b"Hello, World!"
-        length = struct.pack("!I", socket.htonl(len(test_data)))
+        length = struct.pack("!I", len(test_data))
 
         # Mock socket that returns data in small chunks
         mock_socket = MagicMock()

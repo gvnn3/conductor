@@ -69,16 +69,16 @@ class TestClientExtendedEdgeCases:
         if set(phase_names) == {"Startup", "Run", "Collect", "Reset"}:
             # All phases present
             client = Client(config)
-            assert hasattr(client, "startup")
-            assert hasattr(client, "run")
-            assert hasattr(client, "collect")
-            assert hasattr(client, "reset")
+            assert hasattr(client, "startup_phase")
+            assert hasattr(client, "run_phase")
+            assert hasattr(client, "collect_phase")
+            assert hasattr(client, "reset_phase")
         else:
             # Missing phases should raise error or create empty phases
             try:
                 client = Client(config)
                 # If it succeeds, phases should exist
-                assert hasattr(client, "startup")
+                assert hasattr(client, "startup_phase")
             except (KeyError, AttributeError):
                 # Expected if required phases are missing
                 pass
