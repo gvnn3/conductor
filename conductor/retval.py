@@ -30,7 +30,7 @@
 #
 # Author: George V. Neville-Neil
 #
-# Description: A return code object that can be pickled and sent back
+# Description: A return code object that can be serialized and sent back
 # to the conductor.
 
 from conductor.json_protocol import send_message, MSG_RESULT
