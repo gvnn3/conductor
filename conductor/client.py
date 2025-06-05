@@ -81,13 +81,30 @@ class Client:
 
         self.startup_phase = phase.Phase(self.conductor, self.resultport)
         for i in config["Startup"]:
-            self.startup_phase.append(step.Step(config["Startup"][i]))
+            cmd = config["Startup"][i]
+            # Check if the key name indicates spawn behavior
+            if i.startswith("spawn"):
+                self.startup_phase.append(step.Step(cmd, spawn=True))
+            else:
+                self.startup_phase.append(step.Step(cmd))
 
         self.run_phase = phase.Phase(self.conductor, self.resultport)
         for i in config["Run"]:
             cmd = config["Run"][i]
-            # Check if the command itself starts with spawn: or timeout:
-            if cmd.startswith("spawn:"):
+            # Check if the key name indicates special behavior
+            if i.startswith("spawn"):
+                self.run_phase.append(step.Step(cmd, spawn=True))
+            elif i.startswith("timeout"):
+                # Extract timeout value from key name
+                timeout_str = i.replace("timeout", "")
+                if timeout_str.isdigit():
+                    self.run_phase.append(
+                        step.Step(cmd, timeout=int(timeout_str))
+                    )
+                else:
+                    self.run_phase.append(step.Step(cmd))
+            # Also check if the command itself starts with spawn: or timeout:
+            elif cmd.startswith("spawn:"):
                 self.run_phase.append(
                     step.Step(cmd.replace("spawn:", "", 1), spawn=True)
                 )

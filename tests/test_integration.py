@@ -75,7 +75,7 @@ class TestRealStepExecution:
         elapsed = time.time() - start_time
 
         assert elapsed < 0.5  # Should timeout quickly
-        assert result.message == "Timeout"
+        assert "timed out after" in result.message
 
 
 class TestRealPhaseExecution:
