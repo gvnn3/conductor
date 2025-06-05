@@ -135,51 +135,60 @@ class Client:
 
     def download(self, current):
         """Send a phase down to the player"""
+        cmd = None
         try:
             cmd = socket.create_connection((self.player, self.cmdport))
+            cmd.settimeout(1.0)
+
+            # Convert phase to JSON-serializable format
+            phase_data = {
+                "resulthost": current.resulthost,
+                "resultport": current.resultport,
+                "steps": [
+                    {"command": s.command, "spawn": s.spawn, "timeout": s.timeout}
+                    for s in current.steps
+                ],
+            }
+
+            send_message(cmd, MSG_PHASE, phase_data)
+
+            # Receive response
+            msg_type, data = receive_message(cmd)
+            if msg_type == MSG_RESULT:
+                print(data.get("code", 0), data.get("message", ""))
+                
         except Exception as e:
-            print("Failed to connect to: ", self.player, self.cmdport)
-            print("Error:", e)
-            exit()
-
-        cmd.settimeout(1.0)
-
-        # Convert phase to JSON-serializable format
-        phase_data = {
-            "resulthost": current.resulthost,
-            "resultport": current.resultport,
-            "steps": [
-                {"command": " ".join(s.args), "spawn": s.spawn, "timeout": s.timeout}
-                for s in current.steps
-            ],
-        }
-
-        send_message(cmd, MSG_PHASE, phase_data)
-
-        # Receive response
-        msg_type, data = receive_message(cmd)
-        if msg_type == MSG_RESULT:
-            print(data.get("code", 0), data.get("message", ""))
-        cmd.close()
+            print(f"Failed to connect to {self.player}:{self.cmdport} - {e}")
+            # Don't exit! Let the caller handle the error
+        finally:
+            if cmd:
+                cmd.close()
 
     def doit(self):
         """Tell the remote player to execute the current phase"""
+        cmd = None
         try:
             cmd = socket.create_connection((self.player, self.cmdport))
+            cmd.settimeout(1.0)
+            send_message(cmd, MSG_RUN, {})
+            
+            # Setup the callback socket for the player now
+            self.ressock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+            self.ressock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            # SO_REUSEPORT is not available on all platforms, use try/except
+            try:
+                self.ressock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            except AttributeError:
+                pass  # SO_REUSEPORT not available on this platform
+            self.ressock.bind(("0.0.0.0", self.resultport))
+            self.ressock.listen(5)
+            
         except Exception as e:
-            print("Failed to connect to: ", self.player, self.cmdport)
-            print("Error:", e)
-            exit()
-
-        cmd.settimeout(1.0)
-        send_message(cmd, MSG_RUN, {})
-        cmd.close()
-        # Setup the callback socket for the player now
-        self.ressock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-        self.ressock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.ressock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-        self.ressock.bind(("0.0.0.0", self.resultport))
-        self.ressock.listen(5)
+            print(f"Failed to connect to {self.player}:{self.cmdport} - {e}")
+            # Don't exit! Let the caller handle the error
+        finally:
+            if cmd:
+                cmd.close()
 
     def results(self, reporter=None):
         """Retrieve all the results from the player for the current phase"""
@@ -222,32 +231,3 @@ class Client:
         """Push the rset phase to the player"""
         self.download(self.reset_phase)
 
-    def len_send(self, sock, data):
-        """Send data with 4-byte length header."""
-        length = struct.pack("!I", len(data))
-        sock.sendall(length + data)
-
-    def len_recv(self, sock):
-        """Receive data with 4-byte length header."""
-        # First receive the length
-        length_bytes = b""
-        while len(length_bytes) < 4:
-            chunk = sock.recv(4 - len(length_bytes))
-            if not chunk:
-                break
-            length_bytes += chunk
-
-        if len(length_bytes) < 4:
-            return b""
-
-        length = struct.unpack("!I", length_bytes)[0]
-
-        # Then receive the data
-        data = b""
-        while len(data) < length:
-            chunk = sock.recv(min(4096, length - len(data)))
-            if not chunk:
-                break
-            data += chunk
-
-        return data

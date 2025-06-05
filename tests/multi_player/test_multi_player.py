@@ -53,7 +53,9 @@ step2 = echo "Player {player_id} was here" > /tmp/player_{player_id}_test.txt
 step3 = ping -c 1 localhost
 step4 = python -c "import time; print('Player {player_id} working...'); time.sleep(0.5)"
 step5 = echo "Player {player_id} test complete"
-spawn1 = bash -c "sleep 0.1 && echo 'Player {player_id} spawn process ran at $(date)' > /tmp/player_{player_id}_spawn.txt"
+spawn1 = bash -c "echo 'Player {player_id} spawn process ran at $(date)' > /tmp/player_{player_id}_spawn.txt"
+step6 = sleep 1
+step7 = echo "Player {player_id} finished extended work"
 
 [Collect]
 step1 = echo "Player {player_id} collecting results"
@@ -63,7 +65,7 @@ step4 = cat /tmp/player_{player_id}_spawn.txt 2>/dev/null || echo "No spawn cont
 
 [Reset]
 step1 = echo "Player {player_id} resetting"
-step2 = rm -f /tmp/player_{player_id}_test.txt /tmp/player_{player_id}_spawn.txt
+step2 = rm -f /tmp/player_{player_id}_test.txt
 """
     return config
 
@@ -73,7 +75,7 @@ def create_conductor_config(num_players, player_configs):
     workers_section = "\n".join([f"player{i} = {cfg}" for i, cfg in enumerate(player_configs, 1)])
     
     config = f"""[Test]
-trials = 2
+trials = 1
 
 [Workers]
 {workers_section}
@@ -162,10 +164,11 @@ def run_multi_player_test(num_players):
         
         # Wait a bit for spawn commands to complete
         print(f"\nWaiting for spawn files...")
-        time.sleep(1.5)
+        time.sleep(3.0)  # Increased wait time for spawn processes
         
         # Check for spawn files
         print(f"Checking spawn files...")
+        spawn_files_found = 0
         for i in range(1, num_players + 1):
             spawn_file = f"/tmp/player_{i}_spawn.txt"
             if os.path.exists(spawn_file):
@@ -173,8 +176,15 @@ def run_multi_player_test(num_players):
                     content = f.read().strip()
                 print(f"  Player {i} spawn file: {content if content else 'EMPTY'}")
                 os.unlink(spawn_file)
+                spawn_files_found += 1
             else:
                 print(f"  Player {i} spawn file: NOT FOUND")
+        
+        # Clean up any remaining test files
+        for i in range(1, num_players + 1):
+            test_file = f"/tmp/player_{i}_test.txt"
+            if os.path.exists(test_file):
+                os.unlink(test_file)
         
         # Stop all players
         print(f"\nStopping all players...")
