@@ -237,9 +237,17 @@ class TestClientExtendedEdgeCases:
         if "resultsport" not in config_sections["Coordinator"]:
             config_sections["Coordinator"]["resultsport"] = "6971"
 
-        # Add all provided sections
+        # Add all provided sections, handling case-insensitive duplicates
         for section, options in config_sections.items():
-            config[section] = options
+            # Filter out case-insensitive duplicates in options
+            filtered_options = {}
+            seen_keys = set()
+            for key, value in options.items():
+                key_lower = key.lower()
+                if key_lower not in seen_keys:
+                    filtered_options[key] = value
+                    seen_keys.add(key_lower)
+            config[section] = filtered_options
 
         for phase in ["Startup", "Run", "Collect", "Reset"]:
             if phase not in config:

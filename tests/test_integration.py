@@ -430,8 +430,8 @@ class TestEndToEndScenario:
             assert phase.results[2].message == "Spawned"
 
             # Fourth command timed out
-            assert phase.results[3].code == 0
-            assert phase.results[3].message == "Timeout"
+            assert phase.results[3].code == 1  # RETVAL_ERROR
+            assert "timed out after" in phase.results[3].message
 
             # Verify spawn command actually ran
             time.sleep(0.2)

@@ -2,7 +2,7 @@
 
 import socket
 import struct
-import pickle
+import json
 from hypothesis import given, strategies as st
 from hypothesis.strategies import text, integers, lists, booleans
 
@@ -48,13 +48,16 @@ class TestRetValProperties:
 
         # Extract length and verify
         length_bytes = mock_sock.data[:4]
-        length = socket.ntohl(struct.unpack("!I", length_bytes)[0])
+        length = struct.unpack("!I", length_bytes)[0]  # Already in correct byte order
         assert len(mock_sock.data[4:]) == length
 
-        # Verify we can unpickle the payload
-        unpickled = pickle.loads(mock_sock.data[4:])
-        assert unpickled.code == code
-        assert unpickled.message == message
+        # Verify we can parse the JSON payload
+        import json
+        json_data = mock_sock.data[4:].decode('utf-8')
+        parsed = json.loads(json_data)
+        assert parsed["type"] == "result"
+        assert parsed["data"]["code"] == code
+        assert parsed["data"]["message"] == message
 
 
 class TestStepProperties:
