@@ -1,6 +1,6 @@
 """JSON-based protocol for conductor communication.
 
-This module provides a secure alternative to pickle for network communication
+This module provides secure JSON-based network communication
 between conductor and players.
 """
 
@@ -151,66 +151,51 @@ def phase_from_dict(data: Dict[str, Any]):
     return phase
 
 
-# Backward compatibility wrapper
+# JSON-only protocol handler
 
 
 class ProtocolHandler:
-    """Handles both pickle and JSON protocols for backward compatibility."""
+    """Handles JSON protocol for conductor communication."""
 
-    def __init__(self, protocol: str = "pickle"):
+    def __init__(self, protocol: str = "json"):
         self.protocol = protocol
-        if protocol not in ["pickle", "json"]:
-            raise ValueError(f"Unknown protocol: {protocol}")
+        if protocol != "json":
+            raise ValueError(f"Only JSON protocol is supported, got: {protocol}")
 
     def send(self, sock: socket.socket, obj: Any) -> None:
-        """Send an object using the configured protocol."""
-        if self.protocol == "json":
-            # Convert object to JSON message
-            if hasattr(obj, "__class__"):
-                class_name = obj.__class__.__name__
-                if class_name == "Phase":
-                    msg = Message(MessageType.PHASE, phase_to_dict(obj))
-                elif class_name == "Run":
-                    msg = Message(MessageType.RUN, {})
-                elif class_name == "Config":
-                    msg = Message(MessageType.CONFIG, {"data": str(obj)})
-                elif class_name == "RetVal":
-                    msg = Message(MessageType.RESULT, result_to_dict(obj))
-                else:
-                    raise ProtocolError(f"Unknown object type: {class_name}")
-                send_json_message(sock, msg)
+        """Send an object using JSON protocol."""
+        # Convert object to JSON message
+        if hasattr(obj, "__class__"):
+            class_name = obj.__class__.__name__
+            if class_name == "Phase":
+                msg = Message(MessageType.PHASE, phase_to_dict(obj))
+            elif class_name == "Run":
+                msg = Message(MessageType.RUN, {})
+            elif class_name == "Config":
+                msg = Message(MessageType.CONFIG, {"data": str(obj)})
+            elif class_name == "RetVal":
+                msg = Message(MessageType.RESULT, result_to_dict(obj))
             else:
-                raise ProtocolError("Cannot serialize object")
+                raise ProtocolError(f"Unknown object type: {class_name}")
+            send_json_message(sock, msg)
         else:
-            # Use pickle (existing code)
-            import pickle
-
-            data = pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)
-            sock.sendall(data)
+            raise ProtocolError("Cannot serialize object")
 
     def receive(self, sock: socket.socket) -> Any:
-        """Receive an object using the configured protocol."""
-        if self.protocol == "json":
-            msg = receive_json_message(sock)
-            # Convert JSON message to object
-            if msg.type == MessageType.PHASE:
-                return phase_from_dict(msg.payload)
-            elif msg.type == MessageType.RUN:
-                from conductor.run import Run
+        """Receive an object using JSON protocol."""
+        msg = receive_json_message(sock)
+        # Convert JSON message to object
+        if msg.type == MessageType.PHASE:
+            return phase_from_dict(msg.payload)
+        elif msg.type == MessageType.RUN:
+            from conductor.run import Run
 
-                return Run()
-            elif msg.type == MessageType.CONFIG:
-                from conductor.config import Config
+            return Run()
+        elif msg.type == MessageType.CONFIG:
+            from conductor.config import Config
 
-                return Config()  # Would need proper deserialization
-            elif msg.type == MessageType.RESULT:
-                return retval_from_dict(msg.payload)
-            else:
-                raise ProtocolError(f"Unknown message type: {msg.type}")
+            return Config()  # Would need proper deserialization
+        elif msg.type == MessageType.RESULT:
+            return retval_from_dict(msg.payload)
         else:
-            # Use pickle (existing code)
-            import pickle
-
-            # This is simplified - actual code needs length handling
-            data = sock.recv(65536)
-            return pickle.loads(data)
+            raise ProtocolError(f"Unknown message type: {msg.type}")

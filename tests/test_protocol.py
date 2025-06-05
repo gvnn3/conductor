@@ -122,13 +122,13 @@ class TestConverters:
 
         # To dict
         d = step_to_dict(step)
-        assert d["args"] == "echo test"
+        assert d["args"] == ["echo", "test"]  # args stored as list
         assert d["spawn"] is True
         assert d["timeout"] == 30
 
         # From dict
         step2 = step_from_dict(d)
-        assert step2.args == "echo test"
+        assert step2.args == ["echo", "test"]  # args is a list
         assert step2.spawn is True
         assert step2.timeout == 30
 
@@ -157,7 +157,7 @@ class TestConverters:
         assert d["resulthost"] == "localhost"
         assert d["resultport"] == 6971
         assert len(d["steps"]) == 2
-        assert d["steps"][0]["args"] == "command1"
+        assert d["steps"][0]["args"] == ["command1"]  # args is a list
         assert d["steps"][1]["spawn"] is True
 
         # From dict
@@ -205,25 +205,14 @@ class TestProtocolHandler:
         assert data["payload"]["code"] == 0
         assert data["payload"]["message"] == "All good"
 
-    @patch("conductor.protocol.pickle")
-    def test_pickle_protocol_fallback(self, mock_pickle):
-        """Test pickle protocol for backward compatibility."""
-        handler = ProtocolHandler("pickle")
-        mock_socket = Mock()
+    def test_only_json_protocol_supported(self):
+        """Test that only JSON protocol is supported."""
+        with pytest.raises(ValueError, match="Only JSON protocol is supported"):
+            ProtocolHandler("pickle")
+        
+        with pytest.raises(ValueError, match="Only JSON protocol is supported"):
+            ProtocolHandler("unknown")
 
-        phase = Phase("localhost", 9999)
-        mock_pickle.dumps.return_value = b"pickled_data"
-
-        handler.send(mock_socket, phase)
-
-        # Verify pickle was used
-        mock_pickle.dumps.assert_called_once()
-        mock_socket.sendall.assert_called_with(b"pickled_data")
-
-    def test_invalid_protocol(self):
-        """Test invalid protocol raises error."""
-        with pytest.raises(ValueError):
-            ProtocolHandler("xml")
 
 
 class TestProtocolSecurity:
@@ -236,7 +225,12 @@ class TestProtocolSecurity:
             {
                 "version": 1,
                 "type": "phase",
-                "payload": {"__reduce__": ["os.system", ["echo hacked"]], "steps": []},
+                "payload": {
+                    "__reduce__": ["os.system", ["echo hacked"]], 
+                    "steps": [],
+                    "resulthost": "localhost",
+                    "resultport": 6971
+                },
             }
         )
 
@@ -244,6 +238,8 @@ class TestProtocolSecurity:
         msg = Message.from_json(malicious_json)
         assert "__reduce__" in msg.payload  # It's just data
 
-        # Converting to phase should ignore the malicious field
+        # Converting to phase should work and ignore the malicious field
         phase = phase_from_dict(msg.payload)
         assert len(phase.steps) == 0
+        assert phase.resulthost == "localhost"
+        assert phase.resultport == 6971
