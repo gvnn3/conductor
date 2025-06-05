@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Step execution now handles non-UTF-8 output gracefully
 - RetVal.send now converts non-serializable objects to strings
 - Special command parsing (spawn:, timeout:) now works correctly
+- **BREAKING**: Step execution now uses shell=True for full shell support
+- Environment variable expansion now works in all commands
 
 ### Fixed
 - Binary output from subprocesses no longer crashes Step execution
@@ -40,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ConfigParser interpolation issues with % character
 - Port validation prevents invalid port numbers
 - Command parsing handles unclosed quotes without crashing
+- FileNotFoundError handling for missing commands
 
 ### Security
 - Removed insecure pickle protocol in favor of JSON

@@ -72,9 +72,10 @@ Conductor is a distributed testing framework following a coordinator-worker patt
 - `retval.RetVal`: Standardized communication protocol
 
 ### Step Execution Modes
-- **Normal**: `command` - Waits for completion
-- **Spawn**: `spawn:command` - Fire and forget
+- **Normal**: `command` - Waits for completion (full shell execution)
+- **Spawn**: `spawn:command` - Fire and forget (background process)
 - **Timeout**: `timeout30:command` - Kill after N seconds
+- **Shell Features**: Full shell support including environment variables, pipes, redirections
 
 ### Configuration Structure
 Test configuration (`conductor.cfg`) defines trials and player list.
@@ -90,16 +91,18 @@ Player configuration (`*.cfg`) defines connection info and test steps for each p
 
 ### Test Coverage
 - `json_protocol.py`: 98% coverage with edge case handling
-- `step.py`: 100% coverage including binary output handling
-- `phase.py`: Good coverage with parallel execution tests
-- `client.py`: 54% coverage with port validation and command parsing
+- `step.py`: 83% coverage including shell execution and binary output
+- `phase.py`: 96% coverage with parallel execution tests
+- `client.py`: 88% coverage with port validation and command parsing
 - `config.py`: 100% coverage (simple data holder)
-- `retval.py`: 81% coverage with serialization safety
+- `retval.py`: 79% coverage with serialization safety
 
 ### Key Improvements Made
 1. **JSON Protocol**: Replaced insecure pickle with JSON, added version field
-2. **Edge Case Handling**: Fixed bugs found through hypothesis testing
-3. **Binary Output**: Step execution now handles non-UTF-8 output
-4. **Serialization Safety**: RetVal handles non-serializable objects
-5. **Port Validation**: Client validates port numbers
-6. **Modern Build**: Replaced setup.py with pyproject.toml
+2. **Shell Execution**: Enabled full shell features for arbitrary command execution
+3. **Edge Case Handling**: Fixed bugs found through hypothesis testing
+4. **Binary Output**: Step execution now handles non-UTF-8 output
+5. **Environment Variables**: Full support for $VAR and ${VAR} expansion
+6. **Serialization Safety**: RetVal handles non-serializable objects
+7. **Port Validation**: Client validates port numbers
+8. **Modern Build**: Replaced setup.py with pyproject.toml

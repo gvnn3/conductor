@@ -43,7 +43,11 @@ This document summarizes all the improvements made to the Conductor distributed 
 ### Step Execution (step.py)
 - Fixed: Binary output from subprocesses now handled with `errors='replace'`
 - Fixed: Commands with unclosed quotes no longer crash
-- Coverage: Increased to 100% with edge case testing
+- Enhanced: Full shell execution support with `shell=True`
+- Enhanced: Environment variable expansion ($VAR, ${VAR})
+- Enhanced: Shell features (pipes, redirections, wildcards)
+- Fixed: FileNotFoundError handling for missing commands
+- Coverage: Increased to 83% with comprehensive edge case testing
 
 ### JSON Protocol (json_protocol.py)
 - Fixed: Partial length header now properly raises ProtocolError
@@ -67,10 +71,10 @@ This document summarizes all the improvements made to the Conductor distributed 
 
 ### Test Coverage Summary
 - **json_protocol.py**: 98% coverage
-- **step.py**: 100% coverage
+- **step.py**: 83% coverage (with shell execution)
 - **client.py**: 88% coverage
 - **config.py**: 100% coverage
-- **retval.py**: 81% coverage
+- **retval.py**: 79% coverage
 
 ### Test Organization
 - Created separate edge case test files for each major module
