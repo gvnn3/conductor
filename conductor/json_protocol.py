@@ -56,6 +56,9 @@ def receive_message(sock: socket.socket) -> Tuple[str, Dict[str, Any]]:
     if not length_bytes:
         raise ProtocolError("Connection closed")
     
+    if len(length_bytes) != 4:
+        raise ProtocolError("Incomplete length header")
+    
     length = struct.unpack("!I", length_bytes)[0]
     
     # Check against configured size limit
@@ -70,6 +73,10 @@ def receive_message(sock: socket.socket) -> Tuple[str, Dict[str, Any]]:
     # Parse JSON
     try:
         message = json.loads(json_bytes.decode('utf-8'))
+        
+        # Ensure message is a dictionary
+        if not isinstance(message, dict):
+            raise ProtocolError(f"Message must be a JSON object, not {type(message).__name__}")
         
         # Check version
         if "version" not in message:
