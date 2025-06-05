@@ -54,7 +54,8 @@ class TestStepExecution:
         assert result.code == 0
         assert result.message == "hello world\n"
         mock_check_output.assert_called_once_with(
-            ["echo", "hello", "world"],
+            "echo hello world",
+            shell=True,
             timeout=30,
             universal_newlines=True,
             errors="replace",
@@ -72,7 +73,7 @@ class TestStepExecution:
         assert isinstance(result, RetVal)
         assert result.code == 0
         assert result.message == "Spawned"
-        mock_popen.assert_called_once_with(["iperf", "-s"])
+        mock_popen.assert_called_once_with("iperf -s", shell=True)
         # Should not call wait() or communicate() on the process
         mock_process.wait.assert_not_called()
         mock_process.communicate.assert_not_called()
@@ -81,7 +82,7 @@ class TestStepExecution:
     def test_handles_command_failure(self, mock_check_output):
         """Test handling of command that returns non-zero exit code."""
         mock_check_output.side_effect = subprocess.CalledProcessError(
-            returncode=1, cmd=["false"], output="error output"
+            returncode=1, cmd="false", output="error output"
         )
 
         step = Step("false")
@@ -89,7 +90,7 @@ class TestStepExecution:
 
         assert isinstance(result, RetVal)
         assert result.code == 1
-        assert result.message == ["false"]
+        assert result.message == "false"
 
     @patch("subprocess.check_output")
     def test_handles_command_timeout(self, mock_check_output):
