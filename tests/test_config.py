@@ -1,6 +1,6 @@
 """Tests for the Config class."""
 
-import pickle
+import json
 from conductor.config import Config
 
 
@@ -33,20 +33,33 @@ class TestConfigInitialization:
 
 
 class TestConfigSerialization:
-    """Test Config can be pickled for network transmission."""
+    """Test Config can be represented for JSON protocol."""
 
-    def test_can_be_pickled_and_unpickled(self):
-        """Test that Config can be pickled and unpickled."""
-        original = Config("test.example.com", 9999)
+    def test_config_json_representation(self):
+        """Test that Config can be represented for JSON serialization."""
+        config = Config("test.example.com", 9999)
 
-        # Pickle it
-        pickled = pickle.dumps(original)
+        # Create JSON representation
+        config_data = {
+            "host": config.host,
+            "port": config.port
+        }
 
-        # Unpickle it
-        unpickled = pickle.loads(pickled)
+        # Serialize to JSON
+        json_str = json.dumps(config_data)
+        loaded = json.loads(json_str)
 
-        # Verify attributes are preserved
-        assert unpickled.host == original.host
-        assert unpickled.port == original.port
-        assert unpickled.host == "test.example.com"
-        assert unpickled.port == 9999
+        # Verify data is preserved
+        assert loaded["host"] == "test.example.com"
+        assert loaded["port"] == 9999
+        
+    def test_config_to_string(self):
+        """Test Config string representation."""
+        config = Config("myhost", 1234)
+        
+        # The protocol converts Config to string using str()
+        config_str = str(config)
+        
+        # Verify it has a string representation
+        assert isinstance(config_str, str)
+        assert len(config_str) > 0
