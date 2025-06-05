@@ -124,13 +124,26 @@ class TestRealNetworkCommunication:
             # Read length header
             length_data = b""
             while len(length_data) < 4:
-                length_data += conn.recv(4 - len(length_data))
-            # Read message
-            length = socket.ntohl(struct.unpack("!I", length_data)[0])
-            message_data = b""
-            while len(message_data) < length:
-                message_data += conn.recv(length - len(message_data))
-            received_data.append(message_data)
+                chunk = conn.recv(4 - len(length_data))
+                if not chunk:
+                    break
+                length_data += chunk
+            
+            if len(length_data) == 4:
+                # Unpack length (already in network byte order)
+                length = struct.unpack("!I", length_data)[0]
+                
+                # Read message
+                message_data = b""
+                while len(message_data) < length:
+                    chunk = conn.recv(length - len(message_data))
+                    if not chunk:
+                        break
+                    message_data += chunk
+                
+                if len(message_data) == length:
+                    received_data.append(message_data)
+            
             conn.close()
 
         # Start server thread
@@ -154,9 +167,12 @@ class TestRealNetworkCommunication:
         assert len(received_data) == 1
         import json
 
-        received_data_dict = json.loads(received_data[0].decode('utf-8'))
-        assert received_data_dict["code"] == 42
-        assert received_data_dict["message"] == "Test message"
+        # The JSON protocol sends a message with version, type, and data
+        received_message = json.loads(received_data[0].decode('utf-8'))
+        assert received_message["version"] == 1
+        assert received_message["type"] == "result"
+        assert received_message["data"]["code"] == 42
+        assert received_message["data"]["message"] == "Test message"
 
 
 class TestClientServerIntegration:

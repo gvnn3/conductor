@@ -9,6 +9,7 @@ Based on test runs, here's the coverage breakdown for each module:
 - `conductor/config.py` - 100% 
 - `conductor/phase.py` - 100% (with our tests)
 - `conductor/step.py` - 100% (with our tests)
+- `conductor/retval.py` - 100% (improved code + validation)
 
 ### 🔶 Partial Coverage
 - `conductor/client.py` - 85-88% coverage
@@ -19,9 +20,6 @@ Based on test runs, here's the coverage breakdown for each module:
   - Missing: Some error paths in receive_message
   - Missing: set_max_message_size validation
   
-- `conductor/retval.py` - 71-79% coverage
-  - Missing: JSON serialization error handling
-  - Missing: Circular reference handling
 
 ### ❌ No/Low Coverage
 - `conductor/protocol.py` - 0% (old pickle protocol, replaced by JSON)
