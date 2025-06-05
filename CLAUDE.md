@@ -90,7 +90,9 @@ Player configuration (`*.cfg`) defines connection info and test steps for each p
 - **Framework**: pytest with hypothesis for property-based testing
 - **Current State**: Comprehensive test suite with edge case testing
 - **Unit Tests**: Full coverage for core modules with hypothesis tests
-- **Integration Tests**: Example tests exist in `tests/localhost/` and `tests/timeout/`
+- **Integration Tests**: 
+  - Example tests exist in `tests/localhost/` and `tests/timeout/`
+  - JSON protocol integration tests in `tests/test_json_protocol_integration.py`
 - **Edge Case Tests**: Hypothesis-based tests for `json_protocol.py`, `step.py`, `phase.py`, `client.py`, `config.py`, and `retval.py`
 - **End-to-End Tests**: Multi-player tests for 2-10 concurrent players in `tests/multi_player/`
 
