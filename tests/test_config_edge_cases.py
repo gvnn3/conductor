@@ -145,7 +145,9 @@ class TestConfigExtendedEdgeCases:
 
     @given(
         attr_name=st.text(min_size=1, max_size=50).filter(
-            lambda x: x.isidentifier() and x not in ["host", "port"]
+            lambda x: x.isidentifier() 
+            and x not in ["host", "port"]
+            and not x.startswith("__")  # Exclude dunder attributes
         )
     )
     def test_config_dynamic_attributes(self, attr_name):

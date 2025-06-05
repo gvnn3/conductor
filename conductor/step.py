@@ -42,6 +42,8 @@ from conductor import retval
 
 class Step:
     def __init__(self, command, spawn=False, timeout=30):
+        # Store the original command for shell execution
+        self.command = command
         try:
             self.args = shlex.split(command)
         except ValueError:
@@ -53,12 +55,16 @@ class Step:
 
     def run(self):
         if self.spawn:
-            output = subprocess.Popen(self.args)
+            # For spawn mode, use the original command with shell=True
+            output = subprocess.Popen(self.command, shell=True)
             return retval.RetVal(0, "Spawned")
         else:
             try:
+                # Use shell=True to enable full shell features
+                # Use the original command string to preserve quoting
                 output = subprocess.check_output(
-                    self.args,
+                    self.command,
+                    shell=True,
                     timeout=self.timeout,
                     universal_newlines=True,
                     errors="replace",
@@ -72,12 +78,18 @@ class Step:
                     "Output: ",
                     err.output,
                 )
-                ret = retval.RetVal(err.returncode, err.cmd)
+                ret = retval.RetVal(err.returncode, str(err.cmd))
             except subprocess.TimeoutExpired:
-                print("Timeout on: ", self.args)
+                print("Timeout on: ", self.command)
                 ret = retval.RetVal(
                     retval.RETVAL_ERROR,
                     f"Command timed out after {self.timeout} seconds",
+                )
+            except FileNotFoundError:
+                print("Command not found: ", self.args[0])
+                ret = retval.RetVal(
+                    retval.RETVAL_ERROR,
+                    f"Command not found: {self.args[0]}",
                 )
             else:
                 print("Success: ", output)
