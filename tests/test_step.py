@@ -54,7 +54,7 @@ class TestStepExecution:
         assert result.code == 0
         assert result.message == "hello world\n"
         mock_check_output.assert_called_once_with(
-            ["echo", "hello", "world"], timeout=30, universal_newlines=True
+            ["echo", "hello", "world"], timeout=30, universal_newlines=True, errors='replace'
         )
 
     @patch("subprocess.Popen")
@@ -99,5 +99,5 @@ class TestStepExecution:
         result = step.run()
 
         assert isinstance(result, RetVal)
-        assert result.code == 0
-        assert result.message == "Timeout"
+        assert result.code == 1  # RETVAL_ERROR
+        assert result.message == f"Command timed out after {step.timeout} seconds"

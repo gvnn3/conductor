@@ -58,7 +58,7 @@ class Step:
         else:
             try:
                 output = subprocess.check_output(
-                    self.args, timeout=self.timeout, universal_newlines=True
+                    self.args, timeout=self.timeout, universal_newlines=True, errors='replace'
                 )
             except subprocess.CalledProcessError as err:
                 print(
