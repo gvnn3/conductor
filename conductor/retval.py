@@ -51,8 +51,33 @@ class RetVal:
 
     def send(self, sock):
         """Send this RetVal as a JSON message."""
+        # Ensure code and message are JSON-serializable
+        try:
+            # Try to convert code to int if possible
+            code = int(self.code)
+        except (ValueError, TypeError):
+            # If not convertible, use string representation
+            code = str(self.code)
+        
+        # Ensure message is a string
+        try:
+            message = str(self.message)
+        except Exception:
+            # Fallback for objects that can't be stringified
+            message = repr(self.message)
+        
         data = {
-            "code": self.code,
-            "message": self.message
+            "code": code,
+            "message": message
         }
-        send_message(sock, MSG_RESULT, data)
+        
+        try:
+            send_message(sock, MSG_RESULT, data)
+        except (ValueError, TypeError) as e:
+            # Handle circular references or other serialization issues
+            # Send a simplified error message instead
+            fallback_data = {
+                "code": RETVAL_ERROR,
+                "message": f"Serialization error: {type(e).__name__}: {str(e)}"
+            }
+            send_message(sock, MSG_RESULT, fallback_data)
