@@ -141,35 +141,9 @@ cmd2 = timeoutabc:echo test
             assert step.spawn is False
             assert step.timeout == 30
     
-    def test_len_recv_exact_size(self):
-        """Test len_recv when data is exactly the requested size (line 196)."""
-        # Create a mock socket
-        mock_socket = Mock()
-        mock_socket.recv.side_effect = [b"1234"]  # Exactly 4 bytes
-        
-        # Create client with minimal config
-        config = configparser.ConfigParser()
-        config.read_string("""
-[Coordinator]
-conductor = localhost
-player = testplayer
-cmdport = 6970
-resultsport = 6971
-
-[Startup]
-[Run]
-[Collect]
-[Reset]
-""")
-        client = Client(config)
-        
-        # Test len_recv
-        data = client.len_recv(mock_socket, 4)
-        assert data == b"1234"
-        assert mock_socket.recv.call_count == 1
     
     def test_download_socket_connect_error(self):
-        """Test download with socket connection error (lines 227-228)."""
+        """Test download with socket connection error - now handles gracefully."""
         config = configparser.ConfigParser()
         config.read_string("""
 [Coordinator]
@@ -185,19 +159,20 @@ resultsport = 6971
 """)
         client = Client(config)
         
-        with patch('socket.socket') as mock_socket_class:
-            mock_socket = Mock()
-            mock_socket.connect.side_effect = socket.error("Connection refused")
-            mock_socket_class.return_value = mock_socket
+        with patch('socket.create_connection') as mock_create_connection:
+            mock_create_connection.side_effect = socket.error("Connection refused")
             
-            # Should handle the error gracefully
-            client.download(client.startup_phase)
-            
-            # Verify socket was closed
-            mock_socket.close.assert_called_once()
+            # Should handle the error gracefully without exiting
+            with patch('builtins.print') as mock_print:
+                client.download(client.startup_phase)
+                
+                # Should print error message
+                mock_print.assert_called_once()
+                args = mock_print.call_args[0]
+                assert "Failed to connect to testplayer:6970" in args[0]
     
     def test_doit_socket_error_handling(self):
-        """Test doit with socket errors (lines 237, 241)."""
+        """Test doit with socket errors - now handles gracefully."""
         config = configparser.ConfigParser()
         config.read_string("""
 [Coordinator]
@@ -213,19 +188,21 @@ resultsport = 6971
 """)
         client = Client(config)
         
-        # Test cmd socket error (line 237)
-        with patch('socket.socket') as mock_socket_class:
-            mock_cmd_socket = Mock()
-            mock_cmd_socket.connect.side_effect = socket.error("Connection refused")
-            mock_socket_class.return_value = mock_cmd_socket
+        # Test cmd socket error
+        with patch('socket.create_connection') as mock_create_connection:
+            mock_create_connection.side_effect = socket.error("Connection refused")
             
-            client.doit()
-            
-            # Verify socket was closed
-            mock_cmd_socket.close.assert_called_once()
+            # Should handle the error gracefully without exiting
+            with patch('builtins.print') as mock_print:
+                client.doit()
+                
+                # Should print error message
+                mock_print.assert_called_once()
+                args = mock_print.call_args[0]
+                assert "Failed to connect to testplayer:6970" in args[0]
     
-    def test_results_socket_close_error(self):
-        """Test results method when socket close fails (line 250)."""
+    def test_so_reuseport_not_available(self):
+        """Test handling when SO_REUSEPORT is not available on platform."""
         config = configparser.ConfigParser()
         config.read_string("""
 [Coordinator]
@@ -241,18 +218,138 @@ resultsport = 6971
 """)
         client = Client(config)
         
-        # Create mock result socket
-        mock_socket = Mock()
+        # Test that doit handles missing SO_REUSEPORT gracefully
+        with patch('socket.create_connection') as mock_create_connection:
+            with patch('socket.socket') as mock_socket_class:
+                mock_cmd_socket = Mock()
+                mock_create_connection.return_value = mock_cmd_socket
+                
+                mock_results_socket = Mock()
+                mock_socket_class.return_value = mock_results_socket
+                
+                # Make SO_REUSEPORT raise AttributeError
+                mock_results_socket.setsockopt.side_effect = lambda level, optname, value: (
+                    None if optname != socket.SO_REUSEPORT else (_ for _ in ()).throw(AttributeError)
+                )
+                
+                # Should not raise exception
+                client.doit()
+                
+                # Verify SO_REUSEADDR was still set
+                mock_results_socket.setsockopt.assert_any_call(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    
+    def test_results_with_reporter(self):
+        """Test results method with a reporter object."""
+        config = configparser.ConfigParser()
+        config.read_string("""
+[Coordinator]
+conductor = localhost
+player = testplayer
+cmdport = 6970
+resultsport = 6971
+
+[Startup]
+[Run]
+[Collect]
+[Reset]
+""")
+        client = Client(config)
         
-        # Mock receive_message to return DONE immediately
+        # Create mock result socket and reporter
+        mock_ressock = Mock()
+        mock_conn = Mock()
+        mock_reporter = Mock()
+        client.ressock = mock_ressock
+        
+        # Mock receive_message to return results then DONE
         with patch('conductor.client.receive_message') as mock_receive:
-            mock_receive.return_value = (MSG_DONE, {"code": RETVAL_DONE})
+            mock_receive.side_effect = [
+                (MSG_RESULT, {"code": 0, "message": "Step 1 complete"}),
+                (MSG_RESULT, {"code": RETVAL_DONE, "message": "All done"})
+            ]
             
-            # Make close raise an exception
-            mock_socket.close.side_effect = socket.error("Already closed")
+            # Setup accept to return connections
+            mock_ressock.accept.side_effect = [
+                (mock_conn, ("127.0.0.1", 12345)),
+                (mock_conn, ("127.0.0.1", 12346))
+            ]
             
-            # Should handle the error gracefully
-            client.results(mock_socket)
+            # Call results with reporter
+            client.results(reporter=mock_reporter)
             
-            # Verify close was attempted
-            mock_socket.close.assert_called_once()
+            # Verify reporter was called
+            assert mock_reporter.add_result.call_count == 2
+            mock_reporter.add_result.assert_any_call(0, "Step 1 complete")
+            mock_reporter.add_result.assert_any_call(RETVAL_DONE, "All done")
+    
+    def test_timeout_key_with_non_digit_number(self):
+        """Test timeout key where the number part contains non-digits."""
+        config = configparser.ConfigParser()
+        config.read_string("""
+[Coordinator]
+conductor = localhost
+player = testplayer
+cmdport = 6970
+resultsport = 6971
+
+[Startup]
+[Run]
+timeout10a = echo test
+[Collect]
+[Reset]
+""")
+        
+        client = Client(config)
+        
+        # Should create normal step since timeout number is not all digits
+        assert len(client.run_phase.steps) == 1
+        assert client.run_phase.steps[0].spawn is False
+        assert client.run_phase.steps[0].timeout == 30  # default
+    
+    def test_spawn_in_startup_phase(self):
+        """Test spawn command in startup phase."""
+        config = configparser.ConfigParser()
+        config.read_string("""
+[Coordinator]
+conductor = localhost
+player = testplayer
+cmdport = 6970
+resultsport = 6971
+
+[Startup]
+spawn1 = iperf -s
+[Run]
+[Collect]
+[Reset]
+""")
+        
+        client = Client(config)
+        
+        # Should create spawn step in startup phase
+        assert len(client.startup_phase.steps) == 1
+        assert client.startup_phase.steps[0].spawn is True
+        assert client.startup_phase.steps[0].command == "iperf -s"
+    
+    def test_timeout_key_with_valid_number(self):
+        """Test timeout key with valid number that triggers line 101."""
+        config = configparser.ConfigParser()
+        config.read_string("""
+[Coordinator]
+conductor = localhost
+player = testplayer
+cmdport = 6970
+resultsport = 6971
+
+[Startup]
+[Run]
+timeout15 = wget http://example.com
+[Collect]
+[Reset]
+""")
+        
+        client = Client(config)
+        
+        # Should create step with custom timeout
+        assert len(client.run_phase.steps) == 1
+        assert client.run_phase.steps[0].spawn is False
+        assert client.run_phase.steps[0].timeout == 15  # custom timeout from key name

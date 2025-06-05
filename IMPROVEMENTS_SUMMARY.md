@@ -137,6 +137,22 @@ This document summarizes all the improvements made to the Conductor distributed 
 - **Better tests** that validate the contract, not edge cases
 - **Result**: 100% coverage with cleaner, more maintainable code
 
+### 11. Improved client.py Error Handling and Code Quality
+- **Removed dangerous exit() calls** - Now handles errors gracefully
+- **Fixed command serialization** - Uses s.command instead of joining args
+- **Added platform-safe socket options** - SO_REUSEPORT with try/except
+- **Removed unused methods** - len_send() and len_recv() were obsolete
+- **Better error messages** - Uses f-strings with context
+- **Result**: More robust error handling, cleaner code
+
+### 12. Fixed Multi-Player Test Spawn File Issue
+- **Root cause**: Reset phase was deleting spawn files before test could check them
+- **Solution**:
+  - Removed spawn file deletion from Reset phase
+  - Added longer-running job to ensure spawn processes complete
+  - Reduced trials from 2 to 1 for clearer test behavior
+- **Result**: All multi-player tests now correctly show spawn files
+
 ## Future Recommendations
 
 ### High Priority

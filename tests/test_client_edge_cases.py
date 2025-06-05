@@ -187,24 +187,6 @@ class TestClientExtendedEdgeCases:
                 assert step.spawn is False
                 assert step.timeout == 30  # default
 
-    def test_client_socket_operations_edge_cases(self):
-        """Test edge cases in client socket operations."""
-        client = self.create_minimal_client()
-
-        # Test len_send with empty data
-        mock_socket = MagicMock()
-        client.len_send(mock_socket, b"")
-        # Should send 4-byte length header + empty data
-        mock_socket.sendall.assert_called_once()
-
-        # Test len_recv with partial data
-        mock_socket = MagicMock()
-        # Simulate receiving length in chunks
-        mock_socket.recv.side_effect = [b"\x00\x00", b"\x00\x04", b"test"]
-
-        data = client.len_recv(mock_socket)
-        assert data == b"test"
-        assert mock_socket.recv.call_count == 3
 
     @given(
         config_sections=st.dictionaries(

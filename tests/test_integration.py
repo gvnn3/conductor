@@ -178,61 +178,6 @@ class TestRealNetworkCommunication:
 class TestClientServerIntegration:
     """Test real client-server interaction."""
 
-    def test_client_len_recv_with_real_data(self):
-        """Test that len_recv actually reads length-prefixed messages correctly."""
-        # Create a mock socket that simulates real behavior
-        import struct
-        import io
-
-        # Create test data
-        test_message = b"Hello from the test!"
-        length_header = struct.pack("!I", socket.htonl(len(test_message)))
-        full_data = length_header + test_message
-
-        # Simulate socket with BytesIO
-        class MockSocket:
-            def __init__(self, data):
-                self.data = io.BytesIO(data)
-                self.recv_calls = 0
-
-            def recv(self, size):
-                # Simulate partial reads like a real socket might
-                self.recv_calls += 1
-                if self.recv_calls == 1:
-                    # Return partial length header
-                    return self.data.read(2)
-                elif self.recv_calls == 2:
-                    # Return rest of length header
-                    return self.data.read(2)
-                else:
-                    # Return data in chunks
-                    return self.data.read(min(size, 5))
-
-        # Test with simulated socket
-        mock_socket = MockSocket(full_data)
-
-        # Create a minimal client to test len_recv
-        config = configparser.ConfigParser()
-        config["Coordinator"] = {
-            "conductor": "localhost",
-            "player": "localhost",
-            "cmdport": "6970",
-            "resultsport": "6971",
-        }
-        config["Startup"] = {}
-        config["Run"] = {}
-        config["Collect"] = {}
-        config["Reset"] = {}
-
-        from conductor.client import Client
-
-        client = Client(config)
-
-        # Test len_recv
-        result = client.len_recv(mock_socket)
-
-        assert result == test_message
-        assert mock_socket.recv_calls > 2  # Should have taken multiple reads
 
 
 class TestRealConfigParsing:
@@ -307,6 +252,7 @@ class TestRealProcessCommunication:
         """Test a simplified version of player socket handling."""
         import threading
         import json
+        import struct
 
         server_ready = threading.Event()
         received_phases = []
@@ -336,9 +282,7 @@ class TestRealProcessCommunication:
 
             if len(length_data) == 4:
                 # Read phase data
-                import struct
-
-                length = socket.ntohl(struct.unpack("!I", length_data)[0])
+                length = struct.unpack("!I", length_data)[0]
 
                 phase_data = b""
                 while len(phase_data) < length:
@@ -378,7 +322,7 @@ class TestRealProcessCommunication:
         # Send phase using JSON protocol  
         phase_dict = {"steps": [{"command": "echo test"}]}
         phase_data = json.dumps(phase_dict).encode('utf-8')
-        length = struct.pack("!I", socket.htonl(len(phase_data)))
+        length = struct.pack("!I", len(phase_data))
         client_sock.sendall(length + phase_data)
 
         # Read response
@@ -387,14 +331,15 @@ class TestRealProcessCommunication:
             chunk = client_sock.recv(4 - len(response_length_data))
             response_length_data += chunk
 
-        response_length = socket.ntohl(struct.unpack("!I", response_length_data)[0])
+        response_length = struct.unpack("!I", response_length_data)[0]
         response_data = b""
         while len(response_data) < response_length:
             chunk = client_sock.recv(response_length - len(response_data))
             response_data += chunk
 
-        response_dict = json.loads(response_data.decode('utf-8'))
-
+        # Parse response - it's a JSON message with type and data
+        response_msg = json.loads(response_data.decode('utf-8'))
+        
         client_sock.close()
         server_thread.join()
 
@@ -402,8 +347,11 @@ class TestRealProcessCommunication:
         assert len(received_phases) == 1
         assert len(received_phases[0]["steps"]) == 1
         assert received_phases[0]["steps"][0]["command"] == "echo test"
-        assert response_dict["code"] == 0
-        assert response_dict["message"] == "Phase received"
+        
+        # Response is wrapped in message envelope with type and data
+        assert response_msg["type"] == "result"
+        assert response_msg["data"]["code"] == 0
+        assert response_msg["data"]["message"] == "Phase received"
 
 
 class TestEndToEndScenario:

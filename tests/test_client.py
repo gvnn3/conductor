@@ -167,24 +167,21 @@ class TestClientCommunication:
     def test_download_handles_connection_failure(
         self, mock_print, mock_create_connection
     ):
-        """Test that download handles connection failures."""
+        """Test that download handles connection failures gracefully without exiting."""
         client = self.create_test_client()
         mock_create_connection.side_effect = socket.error("Connection refused")
 
         # Create a phase to download
         test_phase = Phase("localhost", 6971)
 
-        # Mock exit to prevent actual exit and raise exception instead
-        with patch("builtins.exit", side_effect=SystemExit):
-            with pytest.raises(SystemExit):
-                client.download(test_phase)
+        # Call download - should not raise SystemExit anymore
+        client.download(test_phase)
 
-        # We now print two lines: the connection error and the actual error
-        assert mock_print.call_count == 2
-        assert mock_print.call_args_list[0] == (
-            ("Failed to connect to: ", "localhost", 6970),
-        )
-        assert mock_print.call_args_list[1][0][0] == "Error:"
+        # Should print error message
+        mock_print.assert_called_once()
+        args = mock_print.call_args[0]
+        assert "Failed to connect to localhost:6970" in args[0]
+        assert "Connection refused" in args[0]
 
     @patch("socket.create_connection")
     @patch("socket.socket")
@@ -229,21 +226,18 @@ class TestClientCommunication:
     @patch("socket.create_connection")
     @patch("builtins.print")
     def test_doit_handles_connection_failure(self, mock_print, mock_create_connection):
-        """Test that doit handles connection failures."""
+        """Test that doit handles connection failures gracefully without exiting."""
         client = self.create_test_client()
         mock_create_connection.side_effect = socket.error("Connection refused")
 
-        # Mock exit to prevent actual exit and raise exception instead
-        with patch("builtins.exit", side_effect=SystemExit):
-            with pytest.raises(SystemExit):
-                client.doit()
+        # Call doit - should not raise SystemExit anymore
+        client.doit()
 
-        # We now print two lines: the connection error and the actual error
-        assert mock_print.call_count == 2
-        assert mock_print.call_args_list[0] == (
-            ("Failed to connect to: ", "localhost", 6970),
-        )
-        assert mock_print.call_args_list[1][0][0] == "Error:"
+        # Should print error message
+        mock_print.assert_called_once()
+        args = mock_print.call_args[0]
+        assert "Failed to connect to localhost:6970" in args[0]
+        assert "Connection refused" in args[0]
 
     @patch("conductor.client.receive_message")
     def test_results_receives_messages_until_done(self, mock_receive_message):
@@ -351,59 +345,3 @@ class TestClientPhaseMethods:
 
         client.download.assert_called_once_with(client.reset_phase)
 
-
-class TestClientLenRecv:
-    """Test Client len_recv method."""
-
-    def test_len_recv_reads_length_prefixed_message(self):
-        """Test that len_recv correctly reads length-prefixed messages."""
-        client = TestClientCommunication().create_test_client()
-
-        # Create test message
-        test_data = b"Hello, World!"
-        length = struct.pack("!I", len(test_data))
-
-        # Mock socket that returns data in chunks
-        mock_socket = MagicMock()
-        # First call returns length header
-        # Second call returns the data
-        mock_socket.recv.side_effect = [length, test_data]
-
-        # Call len_recv
-        result = client.len_recv(mock_socket)
-
-        # Verify result
-        assert result == test_data
-
-        # Verify recv was called correctly
-        assert mock_socket.recv.call_count == 2
-        mock_socket.recv.assert_any_call(4)
-        mock_socket.recv.assert_any_call(len(test_data))
-
-    def test_len_recv_handles_partial_reads(self):
-        """Test that len_recv handles partial socket reads."""
-        client = TestClientCommunication().create_test_client()
-
-        # Create test message
-        test_data = b"Hello, World!"
-        length = struct.pack("!I", len(test_data))
-
-        # Mock socket that returns data in small chunks
-        mock_socket = MagicMock()
-        # Return length in 2 chunks, then data in 3 chunks
-        mock_socket.recv.side_effect = [
-            length[:2],
-            length[2:],  # Length header in 2 parts
-            test_data[:5],
-            test_data[5:10],
-            test_data[10:],  # Data in 3 parts
-        ]
-
-        # Call len_recv
-        result = client.len_recv(mock_socket)
-
-        # Verify result
-        assert result == test_data
-
-        # Verify recv was called 5 times
-        assert mock_socket.recv.call_count == 5
