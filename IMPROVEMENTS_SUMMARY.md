@@ -38,6 +38,13 @@ This document summarizes all the improvements made to the Conductor distributed 
 - Updated CLAUDE.md with testing status and improvements
 - Updated Makefile for modern build system
 
+### 6. End-to-End Testing
+- **Added multi-player test framework** (tests/multi_player/test_multi_player.py)
+- Tests 2, 3, 5, and 10 players running concurrently
+- Dynamic port allocation to avoid conflicts
+- Each player creates unique files and pings localhost
+- Verifies spawn functionality and all test phases
+
 ## Bug Fixes
 
 ### Step Execution (step.py)
@@ -81,6 +88,7 @@ This document summarizes all the improvements made to the Conductor distributed 
 - Used Hypothesis for property-based testing
 - Comprehensive unit tests for all bug fixes
 - Integration tests remain functional
+- **NEW: Multi-player end-to-end tests** for 2-10 concurrent players
 
 ## Future Recommendations
 
