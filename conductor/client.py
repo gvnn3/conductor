@@ -47,11 +47,27 @@ from conductor.json_protocol import send_message, receive_message, MSG_PHASE, MS
 class Client:
     def __init__(self, config):
         """Load up all the config data, including all phases"""
+        # Store the config for reference
+        self.config = config
+        
         coordinator = config["Coordinator"]
         self.conductor = coordinator["conductor"]
         self.player = coordinator["player"]
-        self.cmdport = int(coordinator["cmdport"])
-        self.resultport = int(coordinator["resultsport"])
+        
+        # Validate and convert ports
+        try:
+            self.cmdport = int(coordinator["cmdport"])
+            if self.cmdport < 1 or self.cmdport > 65535:
+                raise ValueError(f"Command port must be between 1 and 65535, got {self.cmdport}")
+        except ValueError as e:
+            raise ValueError(f"Invalid command port: {coordinator['cmdport']}") from e
+            
+        try:
+            self.resultport = int(coordinator["resultsport"])
+            if self.resultport < 1 or self.resultport > 65535:
+                raise ValueError(f"Results port must be between 1 and 65535, got {self.resultport}")
+        except ValueError as e:
+            raise ValueError(f"Invalid results port: {coordinator['resultsport']}") from e
 
         self.startup_phase = phase.Phase(self.conductor, self.resultport)
         for i in config["Startup"]:
@@ -59,15 +75,23 @@ class Client:
 
         self.run_phase = phase.Phase(self.conductor, self.resultport)
         for i in config["Run"]:
-            if i.find("spawn") != -1:
-                self.run_phase.append(step.Step(config["Run"][i], spawn=True))
-            elif i.find("timeout") != -1:
-                # Timeout value MUST follow the keyword
-                self.run_phase.append(
-                    step.Step(config["Run"][i], timeout=int(i.replace("timeout", "")))
-                )
+            cmd = config["Run"][i]
+            # Check if the command itself starts with spawn: or timeout:
+            if cmd.startswith("spawn:"):
+                self.run_phase.append(step.Step(cmd.replace("spawn:", "", 1), spawn=True))
+            elif cmd.startswith("timeout"):
+                # Extract timeout value and command
+                parts = cmd.split(":", 1)
+                if len(parts) == 2:
+                    timeout_str = parts[0].replace("timeout", "")
+                    if timeout_str.isdigit():
+                        self.run_phase.append(step.Step(parts[1], timeout=int(timeout_str)))
+                    else:
+                        self.run_phase.append(step.Step(cmd))
+                else:
+                    self.run_phase.append(step.Step(cmd))
             else:
-                self.run_phase.append(step.Step(config["Run"][i]))
+                self.run_phase.append(step.Step(cmd))
 
         self.collect_phase = phase.Phase(self.conductor, self.resultport)
         for i in config["Collect"]:
@@ -76,6 +100,12 @@ class Client:
         self.reset_phase = phase.Phase(self.conductor, self.resultport)
         for i in config["Reset"]:
             self.reset_phase.append(step.Step(config["Reset"][i]))
+            
+        # Create aliases for backward compatibility
+        self.startup = self.startup_phase
+        self.run = self.run_phase
+        self.collect = self.collect_phase
+        self.reset = self.reset_phase
 
     def download(self, current):
         """Send a phase down to the player"""
@@ -168,4 +198,34 @@ class Client:
     def reset(self):
         """Push the rset phase to the player"""
         self.download(self.reset_phase)
+    
+    def len_send(self, sock, data):
+        """Send data with 4-byte length header."""
+        length = struct.pack("!I", len(data))
+        sock.sendall(length + data)
+    
+    def len_recv(self, sock):
+        """Receive data with 4-byte length header."""
+        # First receive the length
+        length_bytes = b""
+        while len(length_bytes) < 4:
+            chunk = sock.recv(4 - len(length_bytes))
+            if not chunk:
+                break
+            length_bytes += chunk
+        
+        if len(length_bytes) < 4:
+            return b""
+        
+        length = struct.unpack("!I", length_bytes)[0]
+        
+        # Then receive the data
+        data = b""
+        while len(data) < length:
+            chunk = sock.recv(min(4096, length - len(data)))
+            if not chunk:
+                break
+            data += chunk
+        
+        return data
 
