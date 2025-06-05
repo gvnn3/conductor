@@ -33,9 +33,6 @@
 # Description: A return code object that can be pickled and sent back
 # to the conductor.
 
-import json
-import struct
-import socket
 from conductor.json_protocol import send_message, MSG_RESULT
 
 RETVAL_OK = 0
@@ -58,19 +55,16 @@ class RetVal:
         except (ValueError, TypeError):
             # If not convertible, use string representation
             code = str(self.code)
-        
+
         # Ensure message is a string
         try:
             message = str(self.message)
         except Exception:
             # Fallback for objects that can't be stringified
             message = repr(self.message)
-        
-        data = {
-            "code": code,
-            "message": message
-        }
-        
+
+        data = {"code": code, "message": message}
+
         try:
             send_message(sock, MSG_RESULT, data)
         except (ValueError, TypeError) as e:
@@ -78,6 +72,6 @@ class RetVal:
             # Send a simplified error message instead
             fallback_data = {
                 "code": RETVAL_ERROR,
-                "message": f"Serialization error: {type(e).__name__}: {str(e)}"
+                "message": f"Serialization error: {type(e).__name__}: {str(e)}",
             }
             send_message(sock, MSG_RESULT, fallback_data)

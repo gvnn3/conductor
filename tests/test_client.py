@@ -182,7 +182,9 @@ class TestClientCommunication:
 
         # We now print two lines: the connection error and the actual error
         assert mock_print.call_count == 2
-        assert mock_print.call_args_list[0] == (("Failed to connect to: ", "localhost", 6970),)
+        assert mock_print.call_args_list[0] == (
+            ("Failed to connect to: ", "localhost", 6970),
+        )
         assert mock_print.call_args_list[1][0][0] == "Error:"
 
     @patch("socket.create_connection")
@@ -239,7 +241,9 @@ class TestClientCommunication:
 
         # We now print two lines: the connection error and the actual error
         assert mock_print.call_count == 2
-        assert mock_print.call_args_list[0] == (("Failed to connect to: ", "localhost", 6970),)
+        assert mock_print.call_args_list[0] == (
+            ("Failed to connect to: ", "localhost", 6970),
+        )
         assert mock_print.call_args_list[1][0][0] == "Error:"
 
     def test_results_receives_messages_until_done(self):

@@ -3,7 +3,6 @@
 from unittest.mock import MagicMock
 import json
 import struct
-import socket
 
 from conductor.retval import (
     RetVal,
@@ -43,14 +42,11 @@ class TestRetValSerialization:
     def test_can_be_json_serialized(self):
         """Test that RetVal can be converted to and from JSON."""
         original = RetVal(code=42, message="Test message")
-        
+
         # Simulate what happens in send()
-        data = {
-            "code": original.code,
-            "message": original.message
-        }
+        data = {"code": original.code, "message": original.message}
         json_str = json.dumps({"type": "result", "data": data})
-        
+
         # Parse it back
         parsed = json.loads(json_str)
         assert parsed["type"] == "result"
@@ -79,7 +75,7 @@ class TestRetValSerialization:
         assert len(json_data) == length
 
         # Verify we can parse the JSON
-        message = json.loads(json_data.decode('utf-8'))
+        message = json.loads(json_data.decode("utf-8"))
         assert message["type"] == "result"
         assert message["data"]["code"] == 0
         assert message["data"]["message"] == "Success"
@@ -107,9 +103,9 @@ class TestRetValSerialization:
             length_bytes = sent_data[:4]
             length = struct.unpack("!I", length_bytes)[0]
             json_data = sent_data[4:]
-            
+
             # Parse JSON
-            message_obj = json.loads(json_data.decode('utf-8'))
+            message_obj = json.loads(json_data.decode("utf-8"))
             assert message_obj["type"] == "result"
             assert message_obj["data"]["code"] == code
             assert message_obj["data"]["message"] == message

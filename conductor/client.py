@@ -34,14 +34,18 @@
 # conductor.
 
 import socket
-import json
 import struct
 
 from conductor import phase
 from conductor import step
-from conductor import run
 from conductor import retval
-from conductor.json_protocol import send_message, receive_message, MSG_PHASE, MSG_RUN, MSG_RESULT
+from conductor.json_protocol import (
+    send_message,
+    receive_message,
+    MSG_PHASE,
+    MSG_RUN,
+    MSG_RESULT,
+)
 
 
 class Client:
@@ -49,25 +53,31 @@ class Client:
         """Load up all the config data, including all phases"""
         # Store the config for reference
         self.config = config
-        
+
         coordinator = config["Coordinator"]
         self.conductor = coordinator["conductor"]
         self.player = coordinator["player"]
-        
+
         # Validate and convert ports
         try:
             self.cmdport = int(coordinator["cmdport"])
             if self.cmdport < 1 or self.cmdport > 65535:
-                raise ValueError(f"Command port must be between 1 and 65535, got {self.cmdport}")
+                raise ValueError(
+                    f"Command port must be between 1 and 65535, got {self.cmdport}"
+                )
         except ValueError as e:
             raise ValueError(f"Invalid command port: {coordinator['cmdport']}") from e
-            
+
         try:
             self.resultport = int(coordinator["resultsport"])
             if self.resultport < 1 or self.resultport > 65535:
-                raise ValueError(f"Results port must be between 1 and 65535, got {self.resultport}")
+                raise ValueError(
+                    f"Results port must be between 1 and 65535, got {self.resultport}"
+                )
         except ValueError as e:
-            raise ValueError(f"Invalid results port: {coordinator['resultsport']}") from e
+            raise ValueError(
+                f"Invalid results port: {coordinator['resultsport']}"
+            ) from e
 
         self.startup_phase = phase.Phase(self.conductor, self.resultport)
         for i in config["Startup"]:
@@ -78,14 +88,18 @@ class Client:
             cmd = config["Run"][i]
             # Check if the command itself starts with spawn: or timeout:
             if cmd.startswith("spawn:"):
-                self.run_phase.append(step.Step(cmd.replace("spawn:", "", 1), spawn=True))
+                self.run_phase.append(
+                    step.Step(cmd.replace("spawn:", "", 1), spawn=True)
+                )
             elif cmd.startswith("timeout"):
                 # Extract timeout value and command
                 parts = cmd.split(":", 1)
                 if len(parts) == 2:
                     timeout_str = parts[0].replace("timeout", "")
                     if timeout_str.isdigit():
-                        self.run_phase.append(step.Step(parts[1], timeout=int(timeout_str)))
+                        self.run_phase.append(
+                            step.Step(parts[1], timeout=int(timeout_str))
+                        )
                     else:
                         self.run_phase.append(step.Step(cmd))
                 else:
@@ -100,7 +114,7 @@ class Client:
         self.reset_phase = phase.Phase(self.conductor, self.resultport)
         for i in config["Reset"]:
             self.reset_phase.append(step.Step(config["Reset"][i]))
-            
+
         # Create aliases for backward compatibility
         self.startup = self.startup_phase
         self.run = self.run_phase
@@ -117,22 +131,19 @@ class Client:
             exit()
 
         cmd.settimeout(1.0)
-        
+
         # Convert phase to JSON-serializable format
         phase_data = {
             "resulthost": current.resulthost,
             "resultport": current.resultport,
             "steps": [
-                {
-                    "command": " ".join(s.args),
-                    "spawn": s.spawn,
-                    "timeout": s.timeout
-                } for s in current.steps
-            ]
+                {"command": " ".join(s.args), "spawn": s.spawn, "timeout": s.timeout}
+                for s in current.steps
+            ],
         }
-        
+
         send_message(cmd, MSG_PHASE, phase_data)
-        
+
         # Receive response
         msg_type, data = receive_message(cmd)
         if msg_type == MSG_RESULT:
@@ -167,7 +178,7 @@ class Client:
             if msg_type == MSG_RESULT:
                 code = data.get("code", 0)
                 message = data.get("message", "")
-                
+
                 # Report the result
                 if reporter:
                     reporter.add_result(code, message)
@@ -177,7 +188,7 @@ class Client:
                         print("done")
                     else:
                         print(code, message)
-                
+
                 if code == retval.RETVAL_DONE:
                     done = True
             sock.close()
@@ -198,12 +209,12 @@ class Client:
     def reset(self):
         """Push the rset phase to the player"""
         self.download(self.reset_phase)
-    
+
     def len_send(self, sock, data):
         """Send data with 4-byte length header."""
         length = struct.pack("!I", len(data))
         sock.sendall(length + data)
-    
+
     def len_recv(self, sock):
         """Receive data with 4-byte length header."""
         # First receive the length
@@ -213,12 +224,12 @@ class Client:
             if not chunk:
                 break
             length_bytes += chunk
-        
+
         if len(length_bytes) < 4:
             return b""
-        
+
         length = struct.unpack("!I", length_bytes)[0]
-        
+
         # Then receive the data
         data = b""
         while len(data) < length:
@@ -226,6 +237,5 @@ class Client:
             if not chunk:
                 break
             data += chunk
-        
-        return data
 
+        return data

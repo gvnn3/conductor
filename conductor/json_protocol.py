@@ -7,7 +7,7 @@ No backward compatibility with pickle is maintained.
 import json
 import struct
 import socket
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, Any, Tuple
 
 
 # Protocol version
@@ -19,6 +19,7 @@ _max_message_size = 100 * 1024 * 1024
 
 class ProtocolError(Exception):
     """Raised when protocol errors occur."""
+
     pass
 
 
@@ -37,13 +38,9 @@ def set_max_message_size(size: int) -> None:
 
 def send_message(sock: socket.socket, msg_type: str, data: Dict[str, Any]) -> None:
     """Send a JSON message with type and data."""
-    message = {
-        "version": PROTOCOL_VERSION,
-        "type": msg_type,
-        "data": data
-    }
-    json_bytes = json.dumps(message).encode('utf-8')
-    
+    message = {"version": PROTOCOL_VERSION, "type": msg_type, "data": data}
+    json_bytes = json.dumps(message).encode("utf-8")
+
     # Send 4-byte length header followed by JSON data
     length = struct.pack("!I", len(json_bytes))
     sock.sendall(length + json_bytes)
@@ -55,36 +52,40 @@ def receive_message(sock: socket.socket) -> Tuple[str, Dict[str, Any]]:
     length_bytes = _recv_exactly(sock, 4)
     if not length_bytes:
         raise ProtocolError("Connection closed")
-    
+
     if len(length_bytes) != 4:
         raise ProtocolError("Incomplete length header")
-    
+
     length = struct.unpack("!I", length_bytes)[0]
-    
+
     # Check against configured size limit
     if length > _max_message_size:
-        raise ProtocolError(f"Message too large: {length} bytes (max: {_max_message_size})")
-    
+        raise ProtocolError(
+            f"Message too large: {length} bytes (max: {_max_message_size})"
+        )
+
     # Read JSON data
     json_bytes = _recv_exactly(sock, length)
     if len(json_bytes) != length:
         raise ProtocolError("Incomplete message received")
-    
+
     # Parse JSON
     try:
-        message = json.loads(json_bytes.decode('utf-8'))
-        
+        message = json.loads(json_bytes.decode("utf-8"))
+
         # Ensure message is a dictionary
         if not isinstance(message, dict):
-            raise ProtocolError(f"Message must be a JSON object, not {type(message).__name__}")
-        
+            raise ProtocolError(
+                f"Message must be a JSON object, not {type(message).__name__}"
+            )
+
         # Check version
         if "version" not in message:
             raise ProtocolError("Missing version field")
-        
+
         if message["version"] != PROTOCOL_VERSION:
             raise ProtocolError(f"Unsupported protocol version: {message['version']}")
-        
+
         return message["type"], message["data"]
     except (json.JSONDecodeError, KeyError) as e:
         raise ProtocolError(f"Invalid message format: {e}")

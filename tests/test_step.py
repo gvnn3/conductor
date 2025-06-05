@@ -54,7 +54,10 @@ class TestStepExecution:
         assert result.code == 0
         assert result.message == "hello world\n"
         mock_check_output.assert_called_once_with(
-            ["echo", "hello", "world"], timeout=30, universal_newlines=True, errors='replace'
+            ["echo", "hello", "world"],
+            timeout=30,
+            universal_newlines=True,
+            errors="replace",
         )
 
     @patch("subprocess.Popen")

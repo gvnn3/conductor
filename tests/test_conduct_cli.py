@@ -4,7 +4,6 @@ import pytest
 import subprocess
 import os
 import tempfile
-from unittest.mock import patch, MagicMock
 import sys
 
 # Add parent directory to path for imports
@@ -210,7 +209,14 @@ worker2 = {client2_config.name}
 
         try:
             result = subprocess.run(
-                [sys.executable, "scripts/conduct", "-t", "5", "--dry-run", coordinator],
+                [
+                    sys.executable,
+                    "scripts/conduct",
+                    "-t",
+                    "5",
+                    "--dry-run",
+                    coordinator,
+                ],
                 capture_output=True,
                 text=True,
             )
@@ -350,21 +356,32 @@ class TestConductCLIIntegration:
         try:
             # Test with dry-run mode to avoid network connections
             result = subprocess.run(
-                [sys.executable, "scripts/conduct", "-t", "1", "-p", "startup", "run", "--dry-run", "--", coordinator],
+                [
+                    sys.executable,
+                    "scripts/conduct",
+                    "-t",
+                    "1",
+                    "-p",
+                    "startup",
+                    "run",
+                    "--dry-run",
+                    "--",
+                    coordinator,
+                ],
                 capture_output=True,
                 text=True,
-                cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             )
-            
+
             # Check that the command completed successfully
             assert result.returncode == 0
-            
+
             # Verify the output
             output = result.stdout + result.stderr
             assert "DRY RUN MODE" in output
             assert "Would run 1 trial(s) with 2 worker(s)" in output
             assert "Phases: ['startup', 'run']" in output
-                
+
         finally:
             os.unlink(coordinator)
             os.unlink(client1)

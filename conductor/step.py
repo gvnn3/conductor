@@ -44,7 +44,7 @@ class Step:
     def __init__(self, command, spawn=False, timeout=30):
         try:
             self.args = shlex.split(command)
-        except ValueError as e:
+        except ValueError:
             # Handle invalid shell syntax like unclosed quotes
             # Fall back to simple split
             self.args = command.split()
@@ -58,7 +58,10 @@ class Step:
         else:
             try:
                 output = subprocess.check_output(
-                    self.args, timeout=self.timeout, universal_newlines=True, errors='replace'
+                    self.args,
+                    timeout=self.timeout,
+                    universal_newlines=True,
+                    errors="replace",
                 )
             except subprocess.CalledProcessError as err:
                 print(
@@ -72,7 +75,10 @@ class Step:
                 ret = retval.RetVal(err.returncode, err.cmd)
             except subprocess.TimeoutExpired:
                 print("Timeout on: ", self.args)
-                ret = retval.RetVal(retval.RETVAL_ERROR, f"Command timed out after {self.timeout} seconds")
+                ret = retval.RetVal(
+                    retval.RETVAL_ERROR,
+                    f"Command timed out after {self.timeout} seconds",
+                )
             else:
                 print("Success: ", output)
                 ret = retval.RetVal(0, output)

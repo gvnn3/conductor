@@ -67,7 +67,7 @@ test-file: ## Run specific test file (use TEST=filename)
 
 .PHONY: test-hypothesis
 test-hypothesis: ## Run property-based tests with Hypothesis
-	$(VENV_BIN)/pytest $(PYTEST_OPTS) $(TEST_DIR)/test_hypothesis.py $(TEST_DIR)/test_step_edge_cases.py
+	$(VENV_BIN)/pytest $(PYTEST_OPTS) $(TEST_DIR)/test_*hypothesis*.py $(TEST_DIR)/test_*edge_cases*.py
 
 .PHONY: coverage
 coverage: ## Run tests with coverage report
@@ -130,13 +130,14 @@ check-fast: lint test-fast ## Run fast checks (lint, fast tests)
 
 .PHONY: build
 build: clean ## Build distribution packages
-	$(VENV_BIN)/python setup.py sdist bdist_wheel
+	$(VENV_BIN)/pip install --upgrade pip build
+	$(VENV_BIN)/python -m build
 
 .PHONY: release
 release: check build ## Prepare for release (run all checks and build)
 	@echo "Release artifacts built in dist/"
 	@echo "Don't forget to:"
-	@echo "  1. Update version in setup.py"
+	@echo "  1. Update version in pyproject.toml"
 	@echo "  2. Update CHANGELOG"
 	@echo "  3. Tag the release"
 	@echo "  4. Push to PyPI if applicable"

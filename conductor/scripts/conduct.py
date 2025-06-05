@@ -13,8 +13,8 @@
 # notice, this list of conditions and the following disclaimer in the
 # documentation and/or other materials provided with the distribution.
 #
-# Neither the name of Neville-Neil Consulting nor the names of its 
-# contributors may be used to endorse or promote products derived from 
+# Neither the name of Neville-Neil Consulting nor the names of its
+# contributors may be used to endorse or promote products derived from
 # this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
@@ -35,8 +35,6 @@
 # the players, parcels out the work, collects the results.
 
 # "system" imports
-import socket
-import pickle
 import configparser
 import sys
 import argparse
@@ -44,8 +42,9 @@ import os
 import logging
 
 # local imports
-from conductor import *
+from conductor import client
 from conductor.reporter import create_reporter
+
 
 def setup_logging(verbose, quiet):
     """Configure logging based on verbosity settings."""
@@ -55,31 +54,32 @@ def setup_logging(verbose, quiet):
         level = logging.DEBUG
     else:
         level = logging.INFO
-    
+
     logging.basicConfig(
         level=level,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
     return logging.getLogger(__name__)
+
 
 def run_phase(clients, phase_name, phase_methods, reporter=None):
     """Run a single phase across all clients."""
     logger = logging.getLogger(__name__)
-    
+
     if reporter:
         reporter.start_phase(phase_name)
-    
+
     # Download phase
     logger.info(f"Downloading {phase_name} phase to all clients")
     for client in clients:
-        phase_methods['download'](client)
-    
+        phase_methods["download"](client)
+
     # Execute phase
     logger.info(f"Executing {phase_name} phase on all clients")
     for client in clients:
         client.doit()
-    
+
     # Collect results
     logger.info(f"Collecting {phase_name} results from all clients")
     for idx, client in enumerate(clients):
@@ -89,121 +89,116 @@ def run_phase(clients, phase_name, phase_methods, reporter=None):
         client.results(reporter)
         if reporter:
             reporter.end_worker()
-    
+
     if reporter:
         reporter.end_phase()
 
+
 def main():
     parser = argparse.ArgumentParser(
-        description='Conductor - Orchestrate distributed system tests',
-        epilog='Example: conduct -t 3 -v test_config.cfg'
+        description="Conductor - Orchestrate distributed system tests",
+        epilog="Example: conduct -t 3 -v test_config.cfg",
     )
-    
+
+    parser.add_argument("config", help="Coordinator configuration file path")
+
     parser.add_argument(
-        'config',
-        help='Coordinator configuration file path'
-    )
-    
-    parser.add_argument(
-        '-t', '--trials',
+        "-t",
+        "--trials",
         type=int,
         default=None,
-        help='Number of trials to run (overrides config file)'
+        help="Number of trials to run (overrides config file)",
     )
-    
+
     parser.add_argument(
-        '-p', '--phases',
-        nargs='+',
-        choices=['startup', 'run', 'collect', 'reset', 'all'],
-        default=['all'],
-        help='Phases to execute (default: all)'
+        "-p",
+        "--phases",
+        nargs="+",
+        choices=["startup", "run", "collect", "reset", "all"],
+        default=["all"],
+        help="Phases to execute (default: all)",
     )
-    
+
     parser.add_argument(
-        '-c', '--workers',
-        nargs='+',
+        "-c",
+        "--workers",
+        nargs="+",
         default=None,
-        help='Specific workers to use (overrides config file)'
+        help="Specific workers to use (overrides config file)",
     )
-    
+
     parser.add_argument(
-        '-v', '--verbose',
-        action='store_true',
-        help='Enable verbose output'
+        "-v", "--verbose", action="store_true", help="Enable verbose output"
     )
-    
+
     parser.add_argument(
-        '-q', '--quiet',
-        action='store_true',
-        help='Suppress all output except errors'
+        "-q", "--quiet", action="store_true", help="Suppress all output except errors"
     )
-    
+
     parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='Show what would be executed without running'
+        "--dry-run",
+        action="store_true",
+        help="Show what would be executed without running",
     )
-    
+
+    parser.add_argument("--version", action="version", version="Conductor 1.0")
+
     parser.add_argument(
-        '--version',
-        action='version',
-        version='Conductor 1.0'
+        "-f",
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format for results (default: text)",
     )
-    
+
     parser.add_argument(
-        '-f', '--format',
-        choices=['text', 'json'],
-        default='text',
-        help='Output format for results (default: text)'
+        "-o", "--output", help="Output file for results (default: stdout)"
     )
-    
-    parser.add_argument(
-        '-o', '--output',
-        help='Output file for results (default: stdout)'
-    )
-    
+
     args = parser.parse_args()
-    
+
     # Setup logging
     logger = setup_logging(args.verbose, args.quiet)
-    
+
     # Check if config file exists
     if not os.path.exists(args.config):
         logger.error(f"Configuration file not found: {args.config}")
         sys.exit(1)
-    
+
     # Read configuration
     logger.info(f"Reading configuration from: {args.config}")
     test_config = configparser.ConfigParser()
-    
+
     try:
         with open(args.config) as master:
             test_config.read_file(master)
     except Exception as e:
         logger.error(f"Failed to read configuration: {e}")
         sys.exit(1)
-    
+
     # Get test defaults
     try:
-        defaults = test_config['Test']
-        trials = args.trials if args.trials is not None else int(defaults.get('trials', 1))
-        
+        defaults = test_config["Test"]
+        trials = (
+            args.trials if args.trials is not None else int(defaults.get("trials", 1))
+        )
+
         # Get output format from config if not specified on command line
-        if args.format == 'text' and 'format' in defaults:
-            args.format = defaults.get('format', 'text')
-        
+        if args.format == "text" and "format" in defaults:
+            args.format = defaults.get("format", "text")
+
         # Get output file from config if not specified on command line
-        if args.output is None and 'output' in defaults:
-            args.output = defaults.get('output')
-            
+        if args.output is None and "output" in defaults:
+            args.output = defaults.get("output")
+
     except KeyError:
         logger.error("Configuration missing [Test] section")
         sys.exit(1)
-    
+
     # Load workers
     clients = []
-    worker_section = test_config['Workers']
-    
+    worker_section = test_config["Workers"]
+
     # Filter workers if specified
     if args.workers:
         worker_keys = [k for k in worker_section if k in args.workers]
@@ -212,18 +207,18 @@ def main():
             sys.exit(1)
     else:
         worker_keys = worker_section
-    
+
     logger.info(f"Loading {len(worker_keys)} worker(s)")
-    
+
     for worker_name in worker_keys:
         worker_config_path = worker_section[worker_name]
-        
+
         if not os.path.exists(worker_config_path):
             logger.error(f"Worker config not found: {worker_config_path}")
             sys.exit(1)
-        
+
         logger.debug(f"Loading worker {worker_name} from {worker_config_path}")
-        
+
         worker_config = configparser.ConfigParser()
         try:
             with open(worker_config_path) as file:
@@ -232,49 +227,50 @@ def main():
         except Exception as e:
             logger.error(f"Failed to load worker {worker_name}: {e}")
             sys.exit(1)
-    
+
     if args.dry_run:
         logger.info("DRY RUN MODE - No commands will be executed")
         logger.info(f"Would run {trials} trial(s) with {len(clients)} worker(s)")
         logger.info(f"Phases: {args.phases}")
         sys.exit(0)
-    
+
     # Determine which phases to run
-    all_phases = ['startup', 'run', 'collect', 'reset']
-    if 'all' in args.phases:
+    all_phases = ["startup", "run", "collect", "reset"]
+    if "all" in args.phases:
         phases_to_run = all_phases
     else:
         phases_to_run = [p for p in all_phases if p in args.phases]
-    
+
     logger.info(f"Running {trials} trial(s) with phases: {', '.join(phases_to_run)}")
-    
+
     # Create reporter
     reporter = create_reporter(args.format, args.output)
     reporter.start_trials(trials, len(clients))
-    
+
     # Phase method mapping
     phase_methods = {
-        'startup': lambda c: c.startup(),
-        'run': lambda c: c.run(),
-        'collect': lambda c: c.collect(),
-        'reset': lambda c: c.reset()
+        "startup": lambda c: c.startup(),
+        "run": lambda c: c.run(),
+        "collect": lambda c: c.collect(),
+        "reset": lambda c: c.reset(),
     }
-    
+
     # Run trials
     for trial in range(trials):
         logger.info(f"Starting trial {trial + 1} of {trials}")
         reporter.start_trial(trial + 1)
-        
+
         for phase in phases_to_run:
             if phase in phase_methods:
-                run_phase(clients, phase, {'download': phase_methods[phase]}, reporter)
-        
+                run_phase(clients, phase, {"download": phase_methods[phase]}, reporter)
+
         reporter.end_trial()
         logger.info(f"Completed trial {trial + 1} of {trials}")
-    
+
     # Finalize report
     reporter.finalize()
     logger.info("All trials completed successfully")
+
 
 if __name__ == "__main__":
     main()

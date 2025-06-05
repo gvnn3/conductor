@@ -1,8 +1,8 @@
 # Conductor - A system for testing distributed systems across a network #
 
-[![Python 3.6+](https://img.shields.io/badge/python-3.6+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-BSD-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-98%25%20coverage-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
 
 Many test frameworks exist to test code on a single host or, across a
 network, on a single server.  Conductor is a distributed system test
