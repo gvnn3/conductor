@@ -33,6 +33,10 @@ venv/bin/pytest -m integration
 
 # Run the example integration test
 ./test_conductor.sh
+
+# Run multi-player end-to-end tests
+cd tests/multi_player
+python test_multi_player.py
 ```
 
 ### Manual Testing
@@ -88,6 +92,7 @@ Player configuration (`*.cfg`) defines connection info and test steps for each p
 - **Unit Tests**: Full coverage for core modules with hypothesis tests
 - **Integration Tests**: Example tests exist in `tests/localhost/` and `tests/timeout/`
 - **Edge Case Tests**: Hypothesis-based tests for `json_protocol.py`, `step.py`, `phase.py`, `client.py`, `config.py`, and `retval.py`
+- **End-to-End Tests**: Multi-player tests for 2-10 concurrent players in `tests/multi_player/`
 
 ### Test Coverage
 - `json_protocol.py`: 98% coverage with edge case handling
@@ -106,3 +111,4 @@ Player configuration (`*.cfg`) defines connection info and test steps for each p
 6. **Serialization Safety**: RetVal handles non-serializable objects
 7. **Port Validation**: Client validates port numbers
 8. **Modern Build**: Replaced setup.py with pyproject.toml
+9. **Multi-Player Testing**: Comprehensive end-to-end tests for concurrent player scenarios
