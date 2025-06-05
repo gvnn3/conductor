@@ -95,15 +95,3 @@ class Step:
                 print("Success: ", output)
                 ret = retval.RetVal(0, output)
             return ret
-
-    def ready(self):
-        """Tell the server we're ready to go."""
-        pass
-
-    def wait_ready(self):
-        """Wait on the server"""
-        pass
-
-    def wait(self, until):
-        """Wait until time specified"""
-        pass

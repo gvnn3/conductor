@@ -96,8 +96,8 @@ Player configuration (`*.cfg`) defines connection info and test steps for each p
 
 ### Test Coverage
 - `json_protocol.py`: 98% coverage with edge case handling
-- `step.py`: 83% coverage including shell execution and binary output
-- `phase.py`: 96% coverage with parallel execution tests
+- `step.py`: 100% coverage (removed unused placeholder methods)
+- `phase.py`: 100% coverage (removed unused load() method)
 - `client.py`: 88% coverage with port validation and command parsing
 - `config.py`: 100% coverage (simple data holder)
 - `retval.py`: 79% coverage with serialization safety

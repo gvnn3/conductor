@@ -47,10 +47,6 @@ class Phase:
         self.steps = []
         self.results = []
 
-    def load(self):
-        """Load a set of Steps into the list to be run"""
-        pass
-
     def append(self, step):
         self.steps.append(step)
 
