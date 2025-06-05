@@ -153,7 +153,7 @@ step1 = echo "test"
             mock_create.assert_called_with(("127.0.0.1", 21200))
 
     def test_player_handles_malformed_messages(self):
-        """Test player handling of malformed pickle messages."""
+        """Test player handling of malformed JSON messages."""
         from scripts.player import Player
 
         # Create player
@@ -163,8 +163,8 @@ step1 = echo "test"
         mock_sock = MagicMock()
         mock_addr = ("127.0.0.1", 12345)
 
-        # Simulate bad pickle data
-        mock_sock.recv.return_value = b"This is not valid pickle data"
+        # Simulate bad JSON data (missing length header)
+        mock_sock.recv.return_value = b"This is not valid JSON protocol data"
 
         # Mock accept to return our mock socket once then timeout
         player.cmdsock.accept = MagicMock(
