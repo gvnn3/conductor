@@ -25,6 +25,8 @@ class TestJSONProtocolEdgeCases:
     @settings(deadline=10000)  # 10 second deadline
     def test_near_size_limit_messages(self, size_mb, msg_type):
         """Test messages at various sizes."""
+        import threading
+        
         # Save original limit
         original_limit = get_max_message_size()
 
@@ -40,15 +42,40 @@ class TestJSONProtocolEdgeCases:
             data = {"large_field": "x" * string_size}
 
             server_sock, client_sock = socket.socketpair()
+            # Set socket buffers to handle large messages
+            server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 10 * 1024 * 1024)
+            client_sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 10 * 1024 * 1024)
 
             try:
                 # This should work for sizes under 10MB
                 if size_mb <= 10:
+                    # Use threading to avoid deadlock on large messages
+                    received_data_holder = []
+                    received_type_holder = []
+                    exception_holder = []
+                    
+                    def receive_thread():
+                        try:
+                            msg_type, data = receive_message(server_sock)
+                            received_type_holder.append(msg_type)
+                            received_data_holder.append(data)
+                        except Exception as e:
+                            exception_holder.append(e)
+                    
+                    thread = threading.Thread(target=receive_thread)
+                    thread.start()
+                    
                     send_message(client_sock, msg_type, data)
-                    received_type, received_data = receive_message(server_sock)
-
-                    assert received_type == msg_type
-                    assert len(received_data["large_field"]) == string_size
+                    
+                    thread.join(timeout=5.0)
+                    if thread.is_alive():
+                        raise Exception("Receive thread timed out")
+                    
+                    if exception_holder:
+                        raise exception_holder[0]
+                    
+                    assert received_type_holder[0] == msg_type
+                    assert len(received_data_holder[0]["large_field"]) == string_size
                 else:
                     # For sizes over 10MB, we expect it to fail on receive
                     send_message(client_sock, msg_type, data)

@@ -47,7 +47,7 @@ step1 = echo "test"
             f.write(f"""[Test]
 trials = 1
 
-[Clients]
+[Workers]
 test_client = {client_config}
 """)
 
@@ -139,18 +139,20 @@ step1 = echo "test"
 
         # Mock socket operations
         with patch("socket.create_connection") as mock_create:
-            mock_sock = MagicMock()
-            mock_create.return_value = mock_sock
+            # Make connection fail
+            mock_create.side_effect = socket.error("Connection refused")
 
-            # Test download phase
-            try:
+            # Test download phase - should handle error gracefully
+            with patch("builtins.print") as mock_print:
                 client.download(client.startup_phase)
-            except SystemExit:
-                # Expected when connection fails
-                pass
 
             # Verify connection was attempted
             mock_create.assert_called_with(("127.0.0.1", 21200))
+            
+            # Verify error was printed
+            mock_print.assert_called_once()
+            args = mock_print.call_args[0]
+            assert "Failed to connect" in args[0]
 
     def test_player_handles_malformed_messages(self):
         """Test player handling of malformed JSON messages."""

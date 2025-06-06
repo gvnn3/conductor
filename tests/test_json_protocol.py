@@ -74,8 +74,8 @@ class TestJSONProtocol:
     def test_receive_message_too_large(self):
         """Test receiving a message that exceeds size limit."""
         mock_socket = Mock()
-        # 11MB message size
-        mock_socket.recv.return_value = struct.pack("!I", 11 * 1024 * 1024)
+        # 101MB message size (exceeds default 100MB limit)
+        mock_socket.recv.return_value = struct.pack("!I", 101 * 1024 * 1024)
 
         with pytest.raises(ProtocolError, match="Message too large"):
             receive_message(mock_socket)
