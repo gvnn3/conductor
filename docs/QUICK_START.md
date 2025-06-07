@@ -75,6 +75,9 @@ conduct --dry-run demo.cfg
 
 # Get JSON output
 conduct --format json demo.cfg
+
+# Use larger message size for big data
+conduct --max-message-size 20 demo.cfg
 ```
 
 ## 3. Real Network Example (2 minutes)

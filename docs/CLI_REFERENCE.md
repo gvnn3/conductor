@@ -23,6 +23,7 @@ conduct [OPTIONS] CONFIG_FILE
 | `--dry-run` | Show what would be executed without running |
 | `--format FORMAT` | Output format: text (default) or json |
 | `--output FILE` | Write results to file instead of stdout |
+| `--max-message-size MB` | Maximum message size in megabytes (default: 10) |
 | `--version` | Show version information |
 
 ### Examples
@@ -76,6 +77,9 @@ conduct --format json --output results.json test_config.cfg
 
 # Combine with other options
 conduct -v --format json -t 5 --output test_results.json test_config.cfg
+
+# Use larger message size for big data transfers
+conduct --max-message-size 50 test_config.cfg
 ```
 
 ### Configuration File Format
@@ -85,6 +89,7 @@ The coordinator configuration file specifies test parameters and worker configur
 ```ini
 [Test]
 trials = 3
+max_message_size = 20  # Optional: max message size in MB (default: 10)
 
 [Workers]
 client1 = path/to/client1.cfg
@@ -109,6 +114,7 @@ player [OPTIONS] CONFIG_FILE
 | `-v, --verbose` | Enable verbose output |
 | `-q, --quiet` | Suppress all output except errors |
 | `-l, --log-file FILE` | Log output to file |
+| `--max-message-size MB` | Maximum message size in megabytes (default: 10) |
 | `--version` | Show version information |
 
 ### Examples
@@ -144,6 +150,7 @@ player = 192.168.1.10      # This player's IP
 conductor = 192.168.1.100  # Conductor's IP
 cmdport = 6970            # Port to listen on
 resultsport = 6971        # Port for results
+max_message_size = 20     # Optional: max message size in MB (default: 10)
 
 [Startup]
 step1 = echo "Starting tests"

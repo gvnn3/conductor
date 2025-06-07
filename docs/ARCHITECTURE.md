@@ -150,9 +150,18 @@ The conductor uses a secure JSON-based protocol replacing the previous pickle im
 │ • Portability: Language-agnostic format                     │
 │ • Debuggability: Human-readable messages                     │
 │ • Versioning: Protocol version field for compatibility      │
-│ • Size limits: 10MB max message size for safety            │
+│ • Size limits: Configurable max message size (default: 10MB)│
 └─────────────────────────────────────────────────────────────┘
 ```
+
+### Message Size Configuration
+
+The maximum message size can be configured through:
+1. **CLI Option**: `--max-message-size 20` (highest priority)
+2. **Config File**: `max_message_size = 20` in `[Test]` or `[Coordinator]` section
+3. **Default**: 10 MB if not specified
+
+This allows handling larger payloads when needed while maintaining secure defaults.
 
 ### Message Types and Structure
 

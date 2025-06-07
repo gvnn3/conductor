@@ -8,10 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Nothing yet
+- Configurable maximum message size via --max-message-size CLI option and max_message_size config setting
+- Input validation for CLI arguments with positive integer checks
 
 ### Changed
-- Nothing yet
+- Default maximum message size changed from 100MB to 10MB for better security
+- CLI parsing now supports configuration precedence (CLI > config file > default)
 
 ### Fixed
 - Nothing yet
