@@ -231,4 +231,18 @@ expires.  In the example above the sleep command will try to sleep for
 keyword is useful for programs that want to run forever or which wait
 for human input unnecessarily.
 
+## Contributing
+
+We welcome contributions to Conductor! Please see our [Contributing Guide](docs/CONTRIBUTING.md) for:
+
+- Development setup and workflow
+- Comprehensive testing procedures
+- Code quality standards
+- Architecture overview
+- Common development tasks
+
+For quick testing, see [Quick Start Guide](docs/QUICK_START.md) and [Installation Guide](docs/INSTALLATION_GUIDE.md).
+
+## Support
+
 This work supported by: Rubicon Communications, LLC (Netgate)
