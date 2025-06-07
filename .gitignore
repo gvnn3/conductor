@@ -44,3 +44,26 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# macOS
+.DS_Store
+
+# Test results
+test_results.json
+*.json.tmp
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Security scan results
+security_report.txt
