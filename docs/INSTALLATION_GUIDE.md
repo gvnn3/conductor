@@ -39,7 +39,7 @@ Conductor is a distributed testing framework that follows a coordinator-worker p
 - Open ports: 6970 (commands) and 6971 (results) by default
 
 ### Python Dependencies
-The only required dependency is `configparser`, which will be installed automatically.
+Conductor has no external dependencies! It uses only Python standard library modules.
 
 ### Security Note
 Conductor uses a secure JSON protocol (v1) for communication between nodes, replacing the older pickle-based protocol. This provides:

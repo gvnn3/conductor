@@ -16,9 +16,7 @@ authors = [
 maintainers = [
     {name = "George V. Neville-Neil", email = "gnn@neville-neil.com"},
 ]
-dependencies = [
-    "configparser",
-]
+dependencies = []
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",

@@ -15,8 +15,8 @@ pip install -e ".[dev]"
 
 # This installs:
 # - conductor package in editable mode
-# - configparser (required dependency)
 # - pytest, pytest-cov, pytest-mock, hypothesis (dev dependencies)
+# Note: No runtime dependencies - uses only Python stdlib!
 ```
 
 ### Running Tests
