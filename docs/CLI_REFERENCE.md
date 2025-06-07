@@ -21,6 +21,8 @@ conduct [OPTIONS] CONFIG_FILE
 | `-v, --verbose` | Enable verbose output with detailed logging |
 | `-q, --quiet` | Suppress all output except errors |
 | `--dry-run` | Show what would be executed without running |
+| `--format FORMAT` | Output format: text (default) or json |
+| `--output FILE` | Write results to file instead of stdout |
 | `--version` | Show version information |
 
 ### Examples
@@ -61,6 +63,21 @@ conduct -q test_config.cfg
 conduct -v test_config.cfg
 ```
 
+#### Output Formatting
+```bash
+# Get results in JSON format
+conduct --format json test_config.cfg
+
+# Save results to file
+conduct --output results.txt test_config.cfg
+
+# JSON results to file for processing
+conduct --format json --output results.json test_config.cfg
+
+# Combine with other options
+conduct -v --format json -t 5 --output test_results.json test_config.cfg
+```
+
 ### Configuration File Format
 
 The coordinator configuration file specifies test parameters and worker configurations:
@@ -69,7 +86,7 @@ The coordinator configuration file specifies test parameters and worker configur
 [Test]
 trials = 3
 
-[Clients]
+[Workers]
 client1 = path/to/client1.cfg
 client2 = path/to/client2.cfg
 ```
@@ -89,8 +106,6 @@ player [OPTIONS] CONFIG_FILE
 | Option | Description |
 |--------|-------------|
 | `-h, --help` | Show help message and exit |
-| `-b, --bind ADDRESS` | Address to bind to (default: 0.0.0.0) |
-| `-p, --port PORT` | Port to listen on (overrides config file) |
 | `-v, --verbose` | Enable verbose output |
 | `-q, --quiet` | Suppress all output except errors |
 | `-l, --log-file FILE` | Log output to file |
@@ -110,16 +125,13 @@ player -v client_config.cfg
 player -l player.log client_config.cfg
 ```
 
-#### Network Configuration
+#### Logging Options
 ```bash
-# Bind to specific interface
-player -b 192.168.1.10 client_config.cfg
+# Verbose output to console and file
+player -v -l player_debug.log client_config.cfg
 
-# Use custom port
-player -p 7000 client_config.cfg
-
-# Bind to localhost only
-player -b 127.0.0.1 client_config.cfg
+# Quiet mode with file logging only
+player -q -l player.log client_config.cfg
 ```
 
 ### Configuration File Format
@@ -127,7 +139,7 @@ player -b 127.0.0.1 client_config.cfg
 The player configuration file specifies connection details and test steps:
 
 ```ini
-[Master]
+[Coordinator]
 player = 192.168.1.10      # This player's IP
 conductor = 192.168.1.100  # Conductor's IP
 cmdport = 6970            # Port to listen on
@@ -197,6 +209,53 @@ conduct -c webserver database test.cfg
 conduct -v -t 1 -p run collect -c client1 test.cfg
 ```
 
+## Output Formats
+
+### Text Format (Default)
+
+The default text format provides human-readable output:
+
+```
+Trial 1 of 3
+Phase: startup
+  Client: webserver
+    Step 1: OK
+    Step 2: OK
+  Client: database
+    Step 1: OK
+    
+Phase: run
+  Client: webserver
+    Step 1: OK - Server started on port 8080
+  Client: database
+    Step 1: OK - Database initialized
+```
+
+### JSON Format
+
+The JSON format provides structured output for programmatic processing:
+
+```json
+{
+  "trial": 1,
+  "total_trials": 3,
+  "phases": [
+    {
+      "name": "startup",
+      "clients": [
+        {
+          "name": "webserver",
+          "steps": [
+            {"index": 1, "status": "OK", "output": ""},
+            {"index": 2, "status": "OK", "output": ""}
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
 ## Exit Codes
 
 Both `conduct` and `player` use standard exit codes:
@@ -253,6 +312,8 @@ Both commands handle signals gracefully:
 
 ## Compatibility Notes
 
-- Python 3.6+ required
+- Python 3.8+ required
 - Works on Linux, macOS, BSD, Windows (with limitations)
-- Some socket options (SO_REUSEPORT) may not be available on all platforms
+- JSON protocol v1 for secure communication
+- Modern CLI with argparse for better user experience
+- Reporter system for flexible output formats

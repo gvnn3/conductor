@@ -64,7 +64,17 @@ player demo_worker.cfg
 
 Terminal 2:
 ```bash
+# Basic run
 conduct demo.cfg
+
+# With verbose output
+conduct -v demo.cfg
+
+# Preview what will be executed
+conduct --dry-run demo.cfg
+
+# Get JSON output
+conduct --format json demo.cfg
 ```
 
 ## 3. Real Network Example (2 minutes)
@@ -175,6 +185,8 @@ spawn2 = top -b -n 60 > /tmp/top.log
 3. **Always test locally first** before distributed setup
 4. **Check player is running** before starting conductor
 5. **Keep configurations simple** and build complexity gradually
+6. **Use --dry-run** to preview what will be executed
+7. **Use --format json** for machine-parseable output
 
 ## Capturing and Managing Results
 
@@ -187,15 +199,26 @@ conduct test.cfg > results.log 2>&1
 
 # View output and save to file
 conduct test.cfg 2>&1 | tee results.log
+
+# Use built-in output option
+conduct --output results.txt test.cfg
+
+# Get JSON formatted results
+conduct --format json --output results.json test.cfg
 ```
 
 ### Per-Worker Results
-Results are prefixed with worker ID (0, 1, 2, etc.):
+Results are prefixed with worker ID (0, 1, 2, etc.) in text format:
 ```
 0 phase received
 0 Command output from worker 0
 1 phase received  
 1 Command output from worker 1
+```
+
+Or use JSON format for structured results:
+```bash
+conduct --format json test.cfg | jq '.phases[].clients[]'
 ```
 
 ### Creating Result Reports
@@ -230,8 +253,34 @@ step2 = scp user@player:/var/log/app.log /local/results/
 step3 = tar -czf /tmp/logs.tar.gz /var/log/myapp/
 ```
 
+## Modern Features
+
+### JSON Protocol
+Conductor uses a secure JSON protocol for communication:
+- No arbitrary code execution risk (unlike pickle)
+- Human-readable messages for debugging
+- Protocol versioning for compatibility
+
+### Enhanced CLI
+```bash
+# Run specific phases only
+conduct --phases startup collect test.cfg
+
+# Test specific clients
+conduct --clients web_server test.cfg
+
+# Multiple output options
+conduct --format json --output results.json test.cfg
+```
+
+### Reporter System
+Choose output format based on your needs:
+- **text**: Human-readable (default)
+- **json**: Machine-parseable for automation
+
 ## Next Steps
 
-- Read the full [Installation Guide](INSTALLATION_GUIDE.md)
-- Check [example configurations](tests/) in the tests directory
-- See [Architecture Documentation](ARCHITECTURE.md) for internals
+- Read the full [Installation Guide](../INSTALLATION_GUIDE.md)
+- Check [example configurations](../tests/) in the tests directory
+- See [Architecture Documentation](../ARCHITECTURE.md) for internals
+- Review [CLI Reference](../CLI_REFERENCE.md) for all options

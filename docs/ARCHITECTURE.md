@@ -36,7 +36,7 @@ Conductor is a distributed testing framework designed to orchestrate tests acros
 │  │ └─────────────┘ │                                          │
 │  └────────┬────────┘                                          │
 │           │                                                    │
-│           │ TCP Sockets (Pickle Protocol)                     │
+│           │ TCP Sockets (JSON Protocol v1)                   │
 │           │                                                    │
 │    ┌──────┴──────┬──────────┬──────────┐                    │
 │    │             │          │          │                     │
@@ -100,6 +100,14 @@ conductor/
 
 ## Core Classes
 
+### Reporter (`reporter.py`)
+- Handles output formatting for test results
+- Supports multiple output formats:
+  - **Text**: Human-readable console output (default)
+  - **JSON**: Machine-parseable structured data
+- Abstracts output logic from core execution
+- Enables easy addition of new formats (XML, HTML, etc.)
+
 ### Client (`client.py`)
 - Represents a player from conductor's perspective
 - Manages socket connection to a player
@@ -129,6 +137,63 @@ conductor/
   - `RETVAL_DONE` (65535): Completion signal
 
 ## Communication Protocol
+
+### JSON Protocol (v1)
+
+The conductor uses a secure JSON-based protocol replacing the previous pickle implementation:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   JSON Protocol Benefits                     │
+├─────────────────────────────────────────────────────────────┤
+│ • Security: No arbitrary code execution                      │
+│ • Portability: Language-agnostic format                     │
+│ • Debuggability: Human-readable messages                     │
+│ • Versioning: Protocol version field for compatibility      │
+│ • Size limits: 10MB max message size for safety            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Message Types and Structure
+
+```json
+// Config Message
+{
+  "version": 1,
+  "type": "config",
+  "data": {
+    "host": "192.168.1.10",
+    "port": 6970
+  }
+}
+
+// Phase Message
+{
+  "version": 1,
+  "type": "phase",
+  "data": {
+    "name": "startup",
+    "steps": ["mkdir -p /tmp/test", "echo 'Starting test'"]
+  }
+}
+
+// RetVal Message
+{
+  "version": 1,
+  "type": "retval",
+  "data": {
+    "retval": 0,
+    "message": "Command executed successfully"
+  }
+}
+
+// Run Command
+{
+  "version": 1,
+  "type": "run",
+  "data": "execute"
+}
+```
 
 ### Data Flow Diagram
 ```
@@ -169,12 +234,16 @@ conductor/
 │  │ L │ E │ N │   │  (Big Endian)       │
 │  └───┴───┴───┴───┘                     │
 ├─────────────────────────────────────────┤
-│  Bytes 4-N:  Pickled Python Object     │
+│  Bytes 4-N:  JSON Payload              │
 │  ┌─────────────────────────────────┐   │
-│  │                                 │   │
-│  │    Serialized Object Data       │   │
-│  │    (Config/Phase/Run/RetVal)    │   │
-│  │                                 │   │
+│  │ {                               │   │
+│  │   "version": 1,                │   │
+│  │   "type": "phase",             │   │
+│  │   "data": {                    │   │
+│  │     "name": "startup",         │   │
+│  │     "steps": [...]             │   │
+│  │   }                             │   │
+│  │ }                               │   │
 │  └─────────────────────────────────┘   │
 └─────────────────────────────────────────┘
 ```
@@ -244,7 +313,7 @@ Conductor          Player 1         Player 2         Player N
 │  ┌──────────────────────────────────────────────────┐  │
 │  │ • Read test.cfg                                  │  │
 │  │ • Parse [Test] section for trials count         │  │
-│  │ • Parse [Clients] section for player configs    │  │
+│  │ • Parse [Workers] section for player configs    │  │
 │  │ • Load each player's configuration file         │  │
 │  └──────────────────────────────────────────────────┘  │
 └───────────────────────┬─────────────────────────────────┘
@@ -292,14 +361,14 @@ Conductor          Player 1         Player 2         Player N
 [Test]
 trials: 1              # Number of test iterations
 
-[Clients]
+[Workers]
 client1: dut.cfg       # Player configuration files
 client2: server.cfg
 ```
 
 ### Player Configuration (`player.cfg`)
 ```ini
-[Master]
+[Coordinator]
 player: 192.168.1.10   # Player's IP address
 conductor: 192.168.1.1 # Conductor's IP address
 cmdport: 6970          # Command port
@@ -427,16 +496,79 @@ step2: rm -rf /tmp/test
 ## Security Notes
 
 ### Current State
+- **JSON Protocol**: Replaced insecure pickle serialization
+- **Protocol Versioning**: Ensures compatibility and security
+- **Size Limits**: 10MB max message size prevents DoS
+- **No Code Execution**: JSON cannot execute arbitrary code
 - No authentication between conductor/player
-- Plaintext communication
-- Arbitrary command execution
-- Trust-based model
+- Plaintext communication (but safe JSON)
+- Command execution still requires trust
 
-### Recommendations
-- Add TLS encryption
+### Security Improvements Made
+```
+┌─────────────────────────────────────────────────────────────┐
+│                 Security Evolution                           │
+├─────────────────┬───────────────────────────────────────────┤
+│ Previous (v0)   │ Current (v1)                              │
+├─────────────────┼───────────────────────────────────────────┤
+│ Pickle Protocol │ JSON Protocol                             │
+│ • Code execution│ • No code execution                       │
+│ • Python-only   │ • Language agnostic                       │
+│ • Security risk │ • Safe serialization                      │
+│ • No validation │ • Schema validation                       │
+│ • No size limit │ • 10MB size limit                        │
+└─────────────────┴───────────────────────────────────────────┘
+```
+
+### Remaining Recommendations
+- Add TLS encryption for confidentiality
 - Implement authentication tokens
 - Command whitelisting option
 - Audit logging
+- Consider mTLS for mutual authentication
+
+## Modern CLI Features
+
+### Enhanced Command-Line Interface
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    CLI Architecture                          │
+├─────────────────────────────────────────────────────────────┤
+│ Conductor CLI (conduct)                                      │
+│ ├── --trials N         Override trial count                 │
+│ ├── --phases PHASE     Run specific phases only            │
+│ ├── --clients CLIENT   Test specific clients               │
+│ ├── --dry-run          Preview execution plan              │
+│ ├── --format FORMAT    Output format (text/json)           │
+│ ├── --output FILE      Write results to file               │
+│ ├── --verbose/-v       Debug logging                       │
+│ └── --quiet/-q         Suppress output                     │
+│                                                             │
+│ Player CLI (player)                                         │
+│ ├── --log-file FILE    Log to file                        │
+│ ├── --verbose/-v       Debug logging                       │
+│ └── config.cfg         Configuration file                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Output Formats via Reporter
+```
+Text Format (Default)          JSON Format (--format json)
+─────────────────────         ──────────────────────────
+                              
+Phase: startup                 {
+  Client: web_server            "phase": "startup",
+  Step 1: OK                    "results": [
+  Step 2: OK                      {
+                                    "client": "web_server",
+Phase: run                          "steps": [
+  Client: web_server                  {"index": 1, "status": "OK"},
+  Step 1: OK                          {"index": 2, "status": "OK"}
+  Output: Server started            ]
+                                  }
+                                ]
+                              }
+```
 
 ## Extension Points
 
@@ -449,6 +581,7 @@ step2: rm -rf /tmp/test
 - Extend RetVal for richer data
 - Add result aggregation plugins
 - Real-time result streaming
+- Custom Reporter formats (XML, HTML, CSV)
 
 ### Player Capabilities
 - Platform-specific command adapters

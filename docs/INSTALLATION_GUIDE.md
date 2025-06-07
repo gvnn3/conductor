@@ -41,6 +41,12 @@ Conductor is a distributed testing framework that follows a coordinator-worker p
 ### Python Dependencies
 The only required dependency is `configparser`, which will be installed automatically.
 
+### Security Note
+Conductor uses a secure JSON protocol (v1) for communication between nodes, replacing the older pickle-based protocol. This provides:
+- Protection against arbitrary code execution
+- Human-readable message format for debugging
+- Language-agnostic protocol for future extensibility
+
 ## Installation
 
 ### Method 1: From Source (Recommended)
@@ -92,7 +98,7 @@ Create a coordinator configuration file (e.g., `test_config.cfg`):
 # Number of times to run the complete test cycle
 trials = 1
 
-[Clients]
+[Workers]
 # List of client configuration files
 # Format: clientN = path/to/client_config.cfg
 client1 = configs/web_server.cfg
@@ -106,7 +112,7 @@ For each client listed above, create a configuration file:
 
 **Example: `configs/web_server.cfg`**
 ```ini
-[Master]
+[Coordinator]
 # Player's IP address (where player will run)
 player = 192.168.1.10
 # Conductor's IP address (this machine)
@@ -146,7 +152,20 @@ step2 = rm -rf /tmp/test_results
 
 From the conductor machine:
 ```bash
+# Basic usage
 conduct test_config.cfg
+
+# With JSON output
+conduct --format json test_config.cfg
+
+# Save results to file
+conduct --output results.txt test_config.cfg
+
+# Dry run to preview
+conduct --dry-run test_config.cfg
+
+# Run specific phases only
+conduct --phases startup reset test_config.cfg
 ```
 
 ## Client Setup (Player)
@@ -177,8 +196,11 @@ The player will:
 # Basic usage
 player <config_file>
 
-# With custom ports (if needed to override config)
-player --cmdport 7000 --resultsport 7001 <config_file>
+# With verbose logging
+player -v <config_file>
+
+# With log file
+player -l player.log <config_file>
 ```
 
 ## Network Configuration
@@ -230,13 +252,13 @@ For testing the setup, create a localhost configuration:
 [Test]
 trials = 1
 
-[Clients]
+[Workers]
 client1 = localhost_client.cfg
 ```
 
 **`localhost_client.cfg`:**
 ```ini
-[Master]
+[Coordinator]
 player = 127.0.0.1
 conductor = 127.0.0.1
 cmdport = 6970
@@ -332,13 +354,14 @@ timeout60 = stress --cpu 4 --timeout 60s
 - Test commands manually on player machine
 - Check for typos in step definitions
 
-#### 4. Pickle Errors
-**Error:** `pickle.loads() failed`
+#### 4. Protocol Errors
+**Error:** `Invalid JSON message` or `Protocol version mismatch`
 
 **Solutions:**
-- Ensure same Python version on all machines
-- Check for version mismatch between conductor/player
-- Verify network isn't corrupting data
+- Ensure all nodes are using the same conductor version
+- Check for network issues corrupting JSON data
+- Verify the protocol version in error messages
+- The modern JSON protocol (v1) is more robust than the old pickle format
 
 ### Debug Mode
 
@@ -381,7 +404,7 @@ Here's a complete example for testing a web application across multiple nodes:
 [Test]
 trials = 3
 
-[Clients]
+[Workers]
 webserver = configs/webserver.cfg
 loadgen1 = configs/loadgen1.cfg
 loadgen2 = configs/loadgen2.cfg

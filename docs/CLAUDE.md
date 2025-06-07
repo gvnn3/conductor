@@ -48,6 +48,15 @@ cd tests/localhost
 # Terminal 2: Run conductor
 cd tests/localhost
 ../../venv/bin/conduct conductor.cfg
+
+# Run with JSON output
+../../venv/bin/conduct --format json conductor.cfg
+
+# Save results to file
+../../venv/bin/conduct --output results.txt conductor.cfg
+
+# Dry run to preview execution
+../../venv/bin/conduct --dry-run conductor.cfg
 ```
 
 ## Architecture Overview
@@ -74,6 +83,7 @@ Conductor is a distributed testing framework following a coordinator-worker patt
 - `phase.Phase`: Container for test steps (one per test phase)
 - `step.Step`: Individual command with execution modes (normal/spawn/timeout)
 - `retval.RetVal`: Standardized communication protocol
+- `reporter.Reporter`: Handles output formatting (text/json)
 
 ### Step Execution Modes
 - **Normal**: `command` - Waits for completion (full shell execution)
@@ -114,3 +124,6 @@ Player configuration (`*.cfg`) defines connection info and test steps for each p
 7. **Port Validation**: Client validates port numbers
 8. **Modern Build**: Replaced setup.py with pyproject.toml
 9. **Multi-Player Testing**: Comprehensive end-to-end tests for concurrent player scenarios
+10. **Reporter System**: Flexible output formatting with text and JSON support
+11. **Enhanced CLI**: Modern argparse with --dry-run, --format, --output options
+12. **Configuration Sections**: Updated to use [Workers] and [Coordinator] terminology

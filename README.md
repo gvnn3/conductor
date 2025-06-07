@@ -14,10 +14,12 @@ the cooperation of several networked devices.
 ## Features ##
 
 - **Distributed Testing**: Coordinate tests across multiple networked machines
+- **Secure JSON Protocol**: Safe communication protocol replacing insecure pickle
 - **Phase-based Execution**: Startup → Run → Collect → Reset workflow
 - **Parallel & Sequential Control**: Run steps in parallel or sequence as needed
 - **Command Types**: Normal, spawn (background), and timeout commands
 - **Rich CLI**: Modern command-line interface with helpful options
+- **Multiple Output Formats**: Text (human-readable) and JSON (machine-parseable)
 - **Flexible Configuration**: INI-based configuration with override options
 - **Comprehensive Logging**: Verbose mode, quiet mode, and file logging
 - **Test Isolation**: Each trial starts fresh with setup/teardown phases
@@ -27,6 +29,15 @@ the cooperation of several networked devices.
 - Python 3.8 or higher
 - pip (for installation)
 - Network connectivity between conductor and players
+
+## Security ##
+
+Conductor uses a secure JSON protocol (v1) that addresses the security vulnerabilities of the previous pickle-based implementation:
+
+- **No Arbitrary Code Execution**: JSON cannot execute code, unlike pickle
+- **Protocol Versioning**: Ensures compatibility and security across versions
+- **Message Size Limits**: 10MB maximum to prevent DoS attacks
+- **Human-Readable Format**: Easier to debug and audit communications
 
 ## Documentation ##
 

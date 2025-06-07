@@ -8,25 +8,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Comprehensive edge case testing using Hypothesis property-based testing
-- Test coverage for all major modules
+- Nothing yet
+
+### Changed
+- Nothing yet
+
+### Fixed
+- Nothing yet
+
+## [2.0.0] - 2025-01-07
+
+### Added
+
+#### Security & Protocol
 - JSON protocol to replace insecure pickle serialization
 - Protocol version field for future compatibility
+- Automated security scanning tool (security_scan.py) with AST analysis
+
+#### CLI & Output
+- JSON output format for test results via --format option
+- Modern CLI with argparse for better user experience
+- Reporter system for flexible output formatting
+- --dry-run option to preview execution
+- --output option to save results to file
+
+#### Testing & Quality
+- Comprehensive edge case testing using Hypothesis property-based testing
+- Test coverage for all major modules
+- Comprehensive integration tests for JSON protocol (test_json_protocol_integration.py)
+- 100% test coverage for phase.py, step.py, retval.py, client.py, and json_protocol.py
+- Multi-player tests correctly show spawn file creation for all players
+- Enhanced multi-player test output to show conductor's collected results
+- Ping commands in multi-player test tasks for more realistic testing
+
+#### Build System
 - Modern pyproject.toml build system
 - Makefile for common development tasks
-- JSON output format for test results
+
+#### Core Improvements
 - Port validation in Client class
 - Binary output handling in Step execution
 - Serialization safety in RetVal class
 - Public len_send/len_recv methods in Client for testing
 - Config attribute in Client for better introspection
 - Phase aliases (startup, run, collect, reset) for backward compatibility
-- Comprehensive integration tests for JSON protocol (test_json_protocol_integration.py)
-- Automated security scanning tool (security_scan.py) with AST analysis
-- 100% test coverage for phase.py, step.py, retval.py, client.py, and json_protocol.py
-- Multi-player tests correctly show spawn file creation for all players
-- Enhanced multi-player test output to show conductor's collected results
-- Ping commands in multi-player test tasks for more realistic testing
 
 ### Changed
 - Replaced pickle protocol with secure JSON protocol
