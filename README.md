@@ -30,11 +30,12 @@ the cooperation of several networked devices.
 
 ## Documentation ##
 
-- **[Quick Start Guide](QUICK_START.md)** - Get running in 5 minutes
-- **[Installation Guide](INSTALLATION_GUIDE.md)** - Detailed setup instructions
-- **[CLI Reference](CLI_REFERENCE.md)** - Command-line options and examples
+- **[Quick Start Guide](docs/QUICK_START.md)** - Get running in 5 minutes
+- **[Installation Guide](docs/INSTALLATION_GUIDE.md)** - Detailed setup instructions
+- **[CLI Reference](docs/CLI_REFERENCE.md)** - Command-line options and examples
+- **[Architecture Overview](docs/ARCHITECTURE.md)** - System internals
+- **[Changelog](docs/CHANGELOG.md)** - Version history and updates
 - **[Example Configurations](examples/)** - Real-world test examples
-- **[Architecture Overview](ARCHITECTURE.md)** - System internals
 
 ## Installation ##
 
@@ -54,7 +55,7 @@ pip install .
 pip install -e .
 ```
 
-For detailed installation instructions, see the [Installation Guide](INSTALLATION_GUIDE.md).
+For detailed installation instructions, see the [Installation Guide](docs/INSTALLATION_GUIDE.md).
 
 ## Quick Start ##
 
