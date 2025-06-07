@@ -44,28 +44,39 @@ cmdport = {cmd_port}
 resultsport = {results_port}
 
 [Startup]
-step1 = echo "Player {player_id} starting up"
-step2 = hostname
+step1 = echo "=== PLAYER {player_id} STARTUP PHASE ==="
+step2 = echo "Player {player_id} starting up on $(hostname)"
+step3 = date
 
 [Run]
-step1 = echo "Player {player_id} running tests"
-step2 = echo "Player {player_id} was here" > /tmp/player_{player_id}_test.txt
-step3 = ping -c 1 localhost
-step4 = python -c "import time; print('Player {player_id} working...'); time.sleep(0.5)"
-step5 = echo "Player {player_id} test complete"
+step1 = echo "=== PLAYER {player_id} RUN PHASE ==="
+step2 = echo "Player {player_id} executing test steps..."
+step3 = echo "Player {player_id} was here at $(date)" > /tmp/player_{player_id}_test.txt
+step4 = echo "Creating test file: SUCCESS"
+step5 = echo "Player {player_id} pinging localhost..."
+step6 = ping -c 2 localhost
+step7 = python -c "import time; print('Player {player_id} processing for 0.5 seconds...'); time.sleep(0.5); print('Player {player_id} processing complete!')"
+step8 = echo "Player {player_id} launching background spawn process..."
 spawn1 = bash -c "echo 'Player {player_id} spawn process ran at $(date)' > /tmp/player_{player_id}_spawn.txt"
-step6 = sleep 1
-step7 = echo "Player {player_id} finished extended work"
+step9 = sleep 1
+step10 = echo "Player {player_id} RUN PHASE COMPLETE"
 
 [Collect]
-step1 = echo "Player {player_id} collecting results"
-step2 = cat /tmp/player_{player_id}_test.txt
-step3 = ls -la /tmp/player_{player_id}_spawn.txt 2>/dev/null || echo "No spawn file yet"
-step4 = cat /tmp/player_{player_id}_spawn.txt 2>/dev/null || echo "No spawn content yet"
+step1 = echo "=== PLAYER {player_id} COLLECT PHASE ==="
+step2 = echo "Player {player_id} collecting results..."
+step3 = echo "Test file contents:"
+step4 = cat /tmp/player_{player_id}_test.txt
+step5 = echo "Spawn file status:"
+step6 = ls -la /tmp/player_{player_id}_spawn.txt 2>/dev/null || echo "No spawn file found"
+step7 = echo "Spawn file contents:"
+step8 = cat /tmp/player_{player_id}_spawn.txt 2>/dev/null || echo "No spawn content found"
+step9 = echo "Player {player_id} COLLECT PHASE COMPLETE"
 
 [Reset]
-step1 = echo "Player {player_id} resetting"
-step2 = rm -f /tmp/player_{player_id}_test.txt
+step1 = echo "=== PLAYER {player_id} RESET PHASE ==="
+step2 = echo "Player {player_id} cleaning up..."
+step3 = rm -f /tmp/player_{player_id}_test.txt
+step4 = echo "Player {player_id} RESET PHASE COMPLETE"
 """
     return config
 
@@ -155,6 +166,12 @@ def run_multi_player_test(num_players):
         
         if result.returncode == 0:
             print("✅ SUCCESS")
+            # Show conductor's collected output
+            print("\n" + "="*60)
+            print("CONDUCTOR COLLECTED OUTPUT:")
+            print("="*60)
+            print(result.stdout)
+            print("="*60 + "\n")
         else:
             print("❌ FAILED")
             # Show output only on failure
@@ -186,12 +203,42 @@ def run_multi_player_test(num_players):
             if os.path.exists(test_file):
                 os.unlink(test_file)
         
-        # Stop all players
-        print(f"\nStopping all players...")
+        # Stop all players and collect output
+        print(f"\nStopping all players and collecting output...")
         for i, proc in enumerate(player_procs, 1):
             proc.terminate()
             try:
-                proc.wait(timeout=5)
+                stdout, stderr = proc.communicate(timeout=5)
+                # For tests with many players, show condensed output
+                if num_players > 3:
+                    print(f"\n=== Player {i} Summary ===")
+                    stdout_text = stdout.decode('utf-8', errors='replace')
+                    # Extract key lines showing phases completed
+                    phase_lines = [line for line in stdout_text.split('\n') 
+                                 if 'PHASE' in line or 'SUCCESS' in line or 'spawn process ran' in line]
+                    if phase_lines:
+                        print("Key outputs:")
+                        for line in phase_lines[:10]:  # Show first 10 key lines
+                            print(f"  {line.strip()}")
+                    
+                    # Check for errors in stderr
+                    stderr_text = stderr.decode('utf-8', errors='replace')
+                    error_lines = [line for line in stderr_text.split('\n') if 'ERROR' in line or 'Exception' in line]
+                    if error_lines:
+                        print("ERRORS found:")
+                        for line in error_lines:
+                            print(f"  {line}")
+                    else:
+                        print("  No errors - player completed successfully")
+                else:
+                    # For small tests, show full output
+                    print(f"\n=== Player {i} Output ===")
+                    if stdout:
+                        print("STDOUT:")
+                        print(stdout.decode('utf-8', errors='replace'))
+                    if stderr:
+                        print("STDERR:")
+                        print(stderr.decode('utf-8', errors='replace'))
             except subprocess.TimeoutExpired:
                 print(f"  Player {i} didn't stop gracefully, killing...")
                 proc.kill()

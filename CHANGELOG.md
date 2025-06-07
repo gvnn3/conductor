@@ -21,6 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Public len_send/len_recv methods in Client for testing
 - Config attribute in Client for better introspection
 - Phase aliases (startup, run, collect, reset) for backward compatibility
+- Comprehensive integration tests for JSON protocol (test_json_protocol_integration.py)
+- Automated security scanning tool (security_scan.py) with AST analysis
+- 100% test coverage for phase.py, step.py, retval.py, client.py, and json_protocol.py
+- Multi-player tests correctly show spawn file creation for all players
+- Enhanced multi-player test output to show conductor's collected results
+- Ping commands in multi-player test tasks for more realistic testing
 
 ### Changed
 - Replaced pickle protocol with secure JSON protocol
@@ -32,6 +38,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Special command parsing (spawn:, timeout:) now works correctly
 - **BREAKING**: Step execution now uses shell=True for full shell support
 - Environment variable expansion now works in all commands
+- Simplified retval.py with type validation instead of complex serialization
+- Improved client.py error handling - removed dangerous exit() calls
+- Fixed command serialization bug in client.py
+- Made SO_REUSEPORT platform-safe in client.py
+- Fixed hanging tests in test suite
+- Reset phase no longer deletes spawn files
+- Multi-player test now displays conductor's stdout for full visibility
 
 ### Fixed
 - Binary output from subprocesses no longer crashes Step execution
@@ -48,6 +61,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed insecure pickle protocol in favor of JSON
 - Added message size limits to prevent DoS attacks
 - Added protocol version validation
+
+### Removed
+- Unused len_send() and len_recv() methods from client.py
+- Unused placeholder methods from phase.py and step.py
+- Complex type conversion logic from retval.py
 
 ### Development
 - Added ruff for code linting and formatting
