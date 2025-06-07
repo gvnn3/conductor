@@ -48,6 +48,118 @@ class TestConductCLIHelp:
         assert "Conductor 1.0" in result.stdout
 
 
+class TestConductMaxMessageSize:
+    """Test conduct CLI max-message-size option."""
+
+    def test_max_message_size_in_help(self):
+        """Test that --max-message-size appears in help."""
+        result = subprocess.run(
+            [sys.executable, "scripts/conduct", "--help"],
+            capture_output=True,
+            text=True,
+        )
+        
+        assert result.returncode == 0
+        assert "--max-message-size" in result.stdout
+        assert "default: 10" in result.stdout
+        assert "megabytes" in result.stdout.lower()
+
+    def test_max_message_size_default(self):
+        """Test that default max message size is 10MB."""
+        # Import the module to test argument parsing
+        from conductor.scripts.conduct import parse_args
+        
+        # Create a temporary config file
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.cfg', delete=False) as f:
+            f.write("[Test]\ntrials = 1\n[Workers]\n")
+            config_file = f.name
+        
+        try:
+            args = parse_args([config_file])
+            assert args.max_message_size == 10
+        finally:
+            os.unlink(config_file)
+
+    def test_max_message_size_custom(self):
+        """Test custom max message size in MB."""
+        from conductor.scripts.conduct import parse_args
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.cfg', delete=False) as f:
+            f.write("[Test]\ntrials = 1\n[Workers]\n")
+            config_file = f.name
+        
+        try:
+            # Test with 5MB
+            args = parse_args(['--max-message-size', '5', config_file])
+            assert args.max_message_size == 5
+            
+            # Test with 20MB
+            args = parse_args(['--max-message-size', '20', config_file])
+            assert args.max_message_size == 20
+        finally:
+            os.unlink(config_file)
+
+    def test_max_message_size_invalid(self):
+        """Test invalid max message size values."""
+        from conductor.scripts.conduct import parse_args
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.cfg', delete=False) as f:
+            f.write("[Test]\ntrials = 1\n[Workers]\n")
+            config_file = f.name
+        
+        try:
+            # Test negative value
+            with pytest.raises(SystemExit):
+                parse_args(['--max-message-size', '-1', config_file])
+            
+            # Test zero
+            with pytest.raises(SystemExit):
+                parse_args(['--max-message-size', '0', config_file])
+            
+            # Test non-numeric
+            with pytest.raises(SystemExit):
+                parse_args(['--max-message-size', 'abc', config_file])
+        finally:
+            os.unlink(config_file)
+
+    def test_max_message_size_from_config(self):
+        """Test reading max_message_size from config file."""
+        from conductor.scripts.conduct import parse_args
+        
+        # Config with max_message_size in [Test] section
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.cfg', delete=False) as f:
+            f.write("[Test]\ntrials = 1\nmax_message_size = 15\n[Workers]\n")
+            config_file = f.name
+        
+        try:
+            args = parse_args([config_file])
+            assert args.max_message_size == 15
+        finally:
+            os.unlink(config_file)
+
+    def test_cli_overrides_config(self):
+        """Test CLI flag overrides config file value."""
+        from conductor.scripts.conduct import parse_args
+        
+        # Config with max_message_size = 5
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.cfg', delete=False) as f:
+            f.write("[Test]\ntrials = 1\nmax_message_size = 5\n[Workers]\n")
+            config_file = f.name
+        
+        try:
+            # CLI with 20 should override config's 5
+            args = parse_args(['--max-message-size', '20', config_file])
+            assert args.max_message_size == 20
+        finally:
+            os.unlink(config_file)
+
+    def test_max_message_size_propagation(self):
+        """Test that max message size is passed to client connections."""
+        # This will test that the value is actually used in the protocol
+        # We'll implement this after we have the basic argument parsing working
+        pytest.skip("To be implemented after basic argument parsing")
+
+
 class TestConductCLIErrors:
     """Test conduct CLI error handling."""
 

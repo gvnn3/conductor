@@ -13,8 +13,8 @@ from typing import Dict, Any, Tuple
 # Protocol version
 PROTOCOL_VERSION = 1
 
-# Maximum message size (default 100MB)
-_max_message_size = 100 * 1024 * 1024
+# Maximum message size (default 10MB)
+_max_message_size = 10 * 1024 * 1024
 
 
 class ProtocolError(Exception):
@@ -36,18 +36,28 @@ def set_max_message_size(size: int) -> None:
     _max_message_size = size
 
 
-def send_message(sock: socket.socket, msg_type: str, data: Dict[str, Any]) -> None:
+def send_message(sock: socket.socket, msg_type: str, data: Dict[str, Any], max_message_size: int = None) -> None:
     """Send a JSON message with type and data."""
+    if max_message_size is None:
+        max_message_size = _max_message_size
+        
     message = {"version": PROTOCOL_VERSION, "type": msg_type, "data": data}
     json_bytes = json.dumps(message).encode("utf-8")
+    
+    # Check message size
+    if len(json_bytes) > max_message_size:
+        raise ProtocolError(f"Message size ({len(json_bytes)} bytes) exceeds maximum ({max_message_size} bytes)")
 
     # Send 4-byte length header followed by JSON data
     length = struct.pack("!I", len(json_bytes))
     sock.sendall(length + json_bytes)
 
 
-def receive_message(sock: socket.socket) -> Tuple[str, Dict[str, Any]]:
+def receive_message(sock: socket.socket, max_message_size: int = None) -> Tuple[str, Dict[str, Any]]:
     """Receive a JSON message and return (type, data)."""
+    if max_message_size is None:
+        max_message_size = _max_message_size
+        
     # Read 4-byte length header
     length_bytes = _recv_exactly(sock, 4)
     if not length_bytes:
@@ -59,9 +69,9 @@ def receive_message(sock: socket.socket) -> Tuple[str, Dict[str, Any]]:
     length = struct.unpack("!I", length_bytes)[0]
 
     # Check against configured size limit
-    if length > _max_message_size:
+    if length > max_message_size:
         raise ProtocolError(
-            f"Message too large: {length} bytes (max: {_max_message_size})"
+            f"Message too large: {length} bytes (max: {max_message_size})"
         )
 
     # Read JSON data

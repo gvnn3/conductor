@@ -49,10 +49,11 @@ from conductor.json_protocol import (
 
 
 class Client:
-    def __init__(self, config):
+    def __init__(self, config, max_message_size=10):
         """Load up all the config data, including all phases"""
         # Store the config for reference
         self.config = config
+        self.max_message_size = max_message_size * 1024 * 1024  # Convert MB to bytes
 
         coordinator = config["Coordinator"]
         self.conductor = coordinator["conductor"]
@@ -150,10 +151,10 @@ class Client:
                 ],
             }
 
-            send_message(cmd, MSG_PHASE, phase_data)
+            send_message(cmd, MSG_PHASE, phase_data, max_message_size=self.max_message_size)
 
             # Receive response
-            msg_type, data = receive_message(cmd)
+            msg_type, data = receive_message(cmd, max_message_size=self.max_message_size)
             if msg_type == MSG_RESULT:
                 print(data.get("code", 0), data.get("message", ""))
                 
@@ -170,7 +171,7 @@ class Client:
         try:
             cmd = socket.create_connection((self.player, self.cmdport))
             cmd.settimeout(1.0)
-            send_message(cmd, MSG_RUN, {})
+            send_message(cmd, MSG_RUN, {}, max_message_size=self.max_message_size)
             
             # Setup the callback socket for the player now
             self.ressock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
@@ -195,7 +196,7 @@ class Client:
         done = False
         while not done:
             sock, addr = self.ressock.accept()
-            msg_type, data = receive_message(sock)
+            msg_type, data = receive_message(sock, max_message_size=self.max_message_size)
             if msg_type == MSG_RESULT:
                 code = data.get("code", 0)
                 message = data.get("message", "")

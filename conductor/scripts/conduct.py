@@ -94,7 +94,16 @@ def run_phase(clients, phase_name, phase_methods, reporter=None):
         reporter.end_phase()
 
 
-def main():
+def validate_positive_int(value):
+    """Validate that value is a positive integer."""
+    ivalue = int(value)
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError(f"must be a positive integer, got {value}")
+    return ivalue
+
+
+def parse_args(argv=None):
+    """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         description="Conductor - Orchestrate distributed system tests",
         epilog="Example: conduct -t 3 -v test_config.cfg",
@@ -155,7 +164,20 @@ def main():
         "-o", "--output", help="Output file for results (default: stdout)"
     )
 
-    args = parser.parse_args()
+    parser.add_argument(
+        "--max-message-size",
+        type=validate_positive_int,
+        default=10,
+        metavar="MB",
+        help="Maximum message size in megabytes (default: 10)"
+    )
+
+    return parser.parse_args(argv)
+
+
+def main():
+    """Main entry point."""
+    args = parse_args()
 
     # Setup logging
     logger = setup_logging(args.verbose, args.quiet)
@@ -191,6 +213,17 @@ def main():
         if args.output is None and "output" in defaults:
             args.output = defaults.get("output")
 
+        # Get max_message_size from config if not overridden by CLI
+        # CLI takes precedence over config file
+        if args.max_message_size == 10:  # Default value, not CLI-specified
+            config_max_size = defaults.get("max_message_size")
+            if config_max_size:
+                try:
+                    args.max_message_size = validate_positive_int(config_max_size)
+                except argparse.ArgumentTypeError as e:
+                    logger.error(f"Invalid max_message_size in config: {e}")
+                    sys.exit(1)
+
     except KeyError:
         logger.error("Configuration missing [Test] section")
         sys.exit(1)
@@ -223,7 +256,7 @@ def main():
         try:
             with open(worker_config_path) as file:
                 worker_config.read_file(file)
-            clients.append(client.Client(worker_config))
+            clients.append(client.Client(worker_config, max_message_size=args.max_message_size))
         except Exception as e:
             logger.error(f"Failed to load worker {worker_name}: {e}")
             sys.exit(1)

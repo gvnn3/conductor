@@ -19,6 +19,70 @@ from conductor.json_protocol import (
 )
 
 
+class TestJSONProtocolMaxMessageSize:
+    """Test configurable max message size in JSON protocol."""
+    
+    def test_send_message_with_custom_size_limit(self):
+        """Test send_message respects custom size limit."""
+        mock_socket = Mock()
+        
+        # Create a message that's about 2MB
+        large_data = 'x' * (2 * 1024 * 1024)
+        message = {'data': large_data}
+        
+        # Should fail with 1MB limit
+        with pytest.raises(ProtocolError) as cm:
+            send_message(mock_socket, MSG_PHASE, message, max_message_size=1*1024*1024)
+        assert "exceeds maximum" in str(cm.value)
+    
+    def test_receive_message_with_custom_size_limit(self):
+        """Test receive_message respects custom size limit."""
+        # Create mock socket with 2MB message
+        large_data = 'x' * (2 * 1024 * 1024)
+        message = {
+            'version': 1,
+            'type': 'phase',
+            'data': {'data': large_data}
+        }
+        json_data = json.dumps(message).encode('utf-8')
+        length = struct.pack('>I', len(json_data))
+        
+        mock_socket = Mock()
+        mock_socket.recv.side_effect = [length, json_data]
+        
+        # Should fail with 1MB limit
+        with pytest.raises(ProtocolError) as cm:
+            receive_message(mock_socket, max_message_size=1*1024*1024)
+        assert "Message too large" in str(cm.value)
+    
+    def test_default_size_limit_10mb(self):
+        """Test default size limit is 10MB."""
+        mock_socket = Mock()
+        
+        # Create a message that's about 11MB (should fail with default)
+        large_data = 'x' * (11 * 1024 * 1024)
+        message = {'data': large_data}
+        
+        with pytest.raises(ProtocolError) as cm:
+            send_message(mock_socket, MSG_PHASE, message)
+        assert "exceeds maximum" in str(cm.value)
+    
+    def test_size_limit_in_megabytes(self):
+        """Test that size limit accepts value in megabytes."""
+        mock_socket = Mock()
+        
+        # 5MB message should pass with 10MB limit
+        data_5mb = 'x' * (5 * 1024 * 1024)
+        message = {'data': data_5mb}
+        
+        # This should succeed (no exception)
+        send_message(mock_socket, MSG_PHASE, message, max_message_size=10*1024*1024)
+        
+        # But fail with 3MB limit
+        with pytest.raises(ProtocolError):
+            send_message(mock_socket, MSG_PHASE, message, max_message_size=3*1024*1024)
+
+
 class TestJSONProtocol:
     """Test the JSON protocol functions."""
 

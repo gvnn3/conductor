@@ -47,6 +47,95 @@ class TestPlayerCLIHelp:
         assert "Player 1.0" in result.stdout
 
 
+class TestPlayerMaxMessageSize:
+    """Test player CLI max-message-size option."""
+
+    def test_max_message_size_in_help(self):
+        """Test that --max-message-size appears in help."""
+        result = subprocess.run(
+            [sys.executable, "scripts/player", "--help"],
+            capture_output=True,
+            text=True,
+        )
+        
+        assert result.returncode == 0
+        assert "--max-message-size" in result.stdout
+        assert "default: 10" in result.stdout
+        assert "megabytes" in result.stdout.lower()
+
+    def test_max_message_size_default(self):
+        """Test that default max message size is 10MB."""
+        # Import the module to test argument parsing
+        from conductor.scripts.player import parse_args
+        
+        # Create a temporary config file
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.cfg', delete=False) as f:
+            f.write("[Coordinator]\nplayer = 127.0.0.1\nconductor = 127.0.0.1\n")
+            f.write("cmdport = 6970\nresultsport = 6971\n")
+            config_file = f.name
+        
+        try:
+            args = parse_args([config_file])
+            assert args.max_message_size == 10
+        finally:
+            os.unlink(config_file)
+
+    def test_max_message_size_custom(self):
+        """Test custom max message size in MB."""
+        from conductor.scripts.player import parse_args
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.cfg', delete=False) as f:
+            f.write("[Coordinator]\nplayer = 127.0.0.1\nconductor = 127.0.0.1\n")
+            f.write("cmdport = 6970\nresultsport = 6971\n")
+            config_file = f.name
+        
+        try:
+            # Test with 5MB
+            args = parse_args(['--max-message-size', '5', config_file])
+            assert args.max_message_size == 5
+            
+            # Test with 20MB
+            args = parse_args(['--max-message-size', '20', config_file])
+            assert args.max_message_size == 20
+        finally:
+            os.unlink(config_file)
+
+    def test_max_message_size_from_config(self):
+        """Test reading max_message_size from config file."""
+        from conductor.scripts.player import parse_args
+        
+        # Config with max_message_size
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.cfg', delete=False) as f:
+            f.write("[Coordinator]\nplayer = 127.0.0.1\nconductor = 127.0.0.1\n")
+            f.write("cmdport = 6970\nresultsport = 6971\n")
+            f.write("max_message_size = 15\n")  # 15 MB in config
+            config_file = f.name
+        
+        try:
+            args = parse_args([config_file])
+            assert args.max_message_size == 15
+        finally:
+            os.unlink(config_file)
+
+    def test_cli_overrides_config(self):
+        """Test CLI flag overrides config file value."""
+        from conductor.scripts.player import parse_args
+        
+        # Config with max_message_size = 5
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.cfg', delete=False) as f:
+            f.write("[Coordinator]\nplayer = 127.0.0.1\nconductor = 127.0.0.1\n")
+            f.write("cmdport = 6970\nresultsport = 6971\n")
+            f.write("max_message_size = 5\n")
+            config_file = f.name
+        
+        try:
+            # CLI with 20 should override config's 5
+            args = parse_args(['--max-message-size', '20', config_file])
+            assert args.max_message_size == 20
+        finally:
+            os.unlink(config_file)
+
+
 class TestPlayerCLIErrors:
     """Test player CLI error handling."""
 

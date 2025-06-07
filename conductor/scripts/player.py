@@ -56,9 +56,10 @@ class Player:
     phases = []
     results = []
 
-    def __init__(self, bind_addr, bind_port, key=None):
+    def __init__(self, bind_addr, bind_port, key=None, max_message_size=10):
         self.bind_addr = bind_addr
         self.bind_port = bind_port
+        self.max_message_size = max_message_size * 1024 * 1024  # Convert MB to bytes
         self.logger = logging.getLogger(__name__)
 
         self.cmdsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
@@ -92,7 +93,7 @@ class Player:
                     continue
 
                 try:
-                    msg_type, data = receive_message(sock)
+                    msg_type, data = receive_message(sock, max_message_size=self.max_message_size)
 
                     if msg_type == MSG_CONFIG:
                         self.config = (
@@ -181,7 +182,16 @@ def setup_logging(verbose, quiet, log_file):
     return logging.getLogger(__name__)
 
 
-def main():
+def validate_positive_int(value):
+    """Validate that value is a positive integer."""
+    ivalue = int(value)
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError(f"must be a positive integer, got {value}")
+    return ivalue
+
+
+def parse_args(argv=None):
+    """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         description="Player - Execute commands from conductor",
         epilog="Example: player -v config.cfg",
@@ -213,7 +223,20 @@ def main():
 
     parser.add_argument("--version", action="version", version="Player 1.0")
 
-    args = parser.parse_args()
+    parser.add_argument(
+        "--max-message-size",
+        type=validate_positive_int,
+        default=10,
+        metavar="MB",
+        help="Maximum message size in megabytes (default: 10)"
+    )
+
+    return parser.parse_args(argv)
+
+
+def main():
+    """Main entry point."""
+    args = parse_args()
 
     # Setup logging
     logger = setup_logging(args.verbose, args.quiet, args.log_file)
@@ -237,13 +260,24 @@ def main():
     try:
         defaults = local_config["Coordinator"]
         cmdport = args.port if args.port is not None else int(defaults["cmdport"])
+        
+        # Get max_message_size from config if not overridden by CLI
+        if args.max_message_size == 10:  # Default value, not CLI-specified
+            config_max_size = defaults.get("max_message_size")
+            if config_max_size:
+                try:
+                    args.max_message_size = validate_positive_int(config_max_size)
+                except argparse.ArgumentTypeError as e:
+                    logger.error(f"Invalid max_message_size in config: {e}")
+                    sys.exit(1)
+                    
     except KeyError:
         logger.error("Configuration missing [Coordinator] section or cmdport setting")
         sys.exit(1)
 
     # Create and run player
     try:
-        play = Player(args.bind, cmdport)
+        play = Player(args.bind, cmdport, max_message_size=args.max_message_size)
 
         # Handle signals gracefully
         def signal_handler(signum, frame):
