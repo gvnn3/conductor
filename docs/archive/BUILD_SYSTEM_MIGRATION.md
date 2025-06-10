@@ -28,7 +28,7 @@ Successfully migrated Conductor from deprecated setup.py to modern pyproject.tom
 - INSTALLATION_GUIDE.md: Removed setuptools references, updated for pip
 - QUICK_START.md: Simplified installation to just `pip install .`
 - SETUP_NOTES.md: Updated to reflect modern installation
-- CLAUDE.md: Updated with new development setup using pip
+- Development documentation: Updated with new development setup using pip
 - PICKLE_MIGRATION_PLAN.md: Added build system modernization to completed items
 
 ### 5. Testing

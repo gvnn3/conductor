@@ -99,7 +99,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added hypothesis for property-based testing
 - Added pytest-cov for coverage reporting
 - Improved test organization with edge case tests
-- Added development documentation in CLAUDE.md
+- Added development documentation and improved project organization
 
 ## [1.0.0] - Previous Release
 
