@@ -1,5 +1,14 @@
 # Conductor Installation and Setup Guide
 
+⚠️ **CRITICAL SECURITY WARNING** ⚠️
+
+**Conductor has NO encryption and NO authentication!**
+- All communications are sent in PLAIN TEXT
+- Anyone who can connect can execute commands on your systems
+- Use ONLY on isolated private test networks
+- NEVER expose Conductor ports to the internet
+- ALWAYS use behind a properly configured firewall
+
 ## Table of Contents
 1. [Overview](#overview)
 2. [Prerequisites](#prerequisites)

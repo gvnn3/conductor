@@ -32,10 +32,21 @@ the cooperation of several networked devices.
 
 ## Security ##
 
-Conductor uses a secure JSON protocol (v1) that addresses the security vulnerabilities of the previous pickle-based implementation:
+⚠️ **IMPORTANT SECURITY WARNING** ⚠️
 
-- **No Arbitrary Code Execution**: JSON cannot execute code, unlike pickle
-- **Protocol Versioning**: Ensures compatibility and security across versions
+**DO NOT USE CONDUCTOR OVER THE INTERNET**
+
+- **NO ENCRYPTION**: All network communications are sent in PLAIN TEXT
+- **NO AUTHENTICATION**: There is NO authentication mechanism - anyone who can connect can control the system
+- **PRIVATE NETWORKS ONLY**: This tool is designed for use in isolated test labs on private networks
+- **FIREWALL REQUIRED**: Always use behind a properly configured firewall
+
+### Design Security Features
+
+While not suitable for internet use, Conductor does include some security improvements over its predecessor:
+
+- **No Arbitrary Code Execution**: JSON protocol cannot execute code, unlike the previous pickle-based implementation
+- **Protocol Versioning**: Ensures compatibility across versions
 - **Message Size Limits**: 10MB maximum to prevent DoS attacks
 - **Human-Readable Format**: Easier to debug and audit communications
 

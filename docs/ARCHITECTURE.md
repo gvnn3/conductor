@@ -504,6 +504,14 @@ step2: rm -rf /tmp/test
 
 ## Security Notes
 
+⚠️ **IMPORTANT: Conductor is NOT secure for internet use!** ⚠️
+
+### Critical Security Limitations
+- **NO ENCRYPTION**: All network traffic is PLAINTEXT
+- **NO AUTHENTICATION**: Anyone who can connect can execute commands
+- **FULL SYSTEM ACCESS**: Players execute arbitrary shell commands
+- **PRIVATE NETWORKS ONLY**: Must be used behind firewalls on isolated test networks
+
 ### Current State
 - **JSON Protocol**: Replaced insecure pickle serialization
 - **Protocol Versioning**: Ensures compatibility and security

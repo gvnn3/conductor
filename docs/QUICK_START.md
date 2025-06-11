@@ -2,6 +2,8 @@
 
 Get up and running with Conductor in 5 minutes!
 
+⚠️ **SECURITY WARNING**: Conductor has NO encryption and NO authentication. Use ONLY on private test networks behind a firewall. DO NOT use over the internet!
+
 ## 1. Installation (30 seconds)
 
 ```bash
