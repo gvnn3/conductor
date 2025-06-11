@@ -12,6 +12,7 @@ license = "BSD-3-Clause"
 keywords = ["networking", "testing"]
 authors = [
     {name = "George V. Neville-Neil", email = "gnn@neville-neil.com"},
+    {name = "Ben Roeder"},
 ]
 maintainers = [
     {name = "Ben Roeder"},
