@@ -1,4 +1,5 @@
 # Copyright (c) 2014, Neville-Neil Consulting
+# Copyright (c) 2025, Ben Roeder
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,6 +30,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # Author: George V. Neville-Neil
+# Current Maintainer: Ben Roeder
 #
 # Description: A Phase object encapsulates a set of Steps to be taken
 # by the Client when asked by the Conductor.
