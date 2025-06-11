@@ -25,7 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Security & Protocol
 - JSON protocol to replace insecure pickle serialization
 - Protocol version field for future compatibility
-- Automated security scanning tool (security_scan.py) with AST analysis
 
 #### CLI & Output
 - JSON output format for test results via --format option
