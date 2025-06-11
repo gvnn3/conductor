@@ -1,5 +1,14 @@
 # Conductor Installation and Setup Guide
 
+⚠️ **CRITICAL SECURITY WARNING** ⚠️
+
+**Conductor has NO encryption and NO authentication!**
+- All communications are sent in PLAIN TEXT
+- Anyone who can connect can execute commands on your systems
+- Use ONLY on isolated private test networks
+- NEVER expose Conductor ports to the internet
+- ALWAYS use behind a properly configured firewall
+
 ## Table of Contents
 1. [Overview](#overview)
 2. [Prerequisites](#prerequisites)
@@ -42,7 +51,7 @@ Conductor is a distributed testing framework that follows a coordinator-worker p
 Conductor has no external dependencies! It uses only Python standard library modules.
 
 ### Security Note
-Conductor uses a secure JSON protocol (v1) for communication between nodes, replacing the older pickle-based protocol. This provides:
+Conductor uses a JSON protocol (v1) transmitted in PLAIN TEXT for communication between nodes, replacing the older pickle-based protocol. This provides:
 - Protection against arbitrary code execution
 - Human-readable message format for debugging
 - Language-agnostic protocol for future extensibility

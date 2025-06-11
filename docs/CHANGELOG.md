@@ -25,7 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Security & Protocol
 - JSON protocol to replace insecure pickle serialization
 - Protocol version field for future compatibility
-- Automated security scanning tool (security_scan.py) with AST analysis
 
 #### CLI & Output
 - JSON output format for test results via --format option
@@ -56,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Phase aliases (startup, run, collect, reset) for backward compatibility
 
 ### Changed
-- Replaced pickle protocol with secure JSON protocol
+- Replaced pickle protocol with JSON protocol (plain text)
 - Updated minimum Python version to 3.8
 - Migrated from setup.py to pyproject.toml
 - Improved error messages for invalid ports

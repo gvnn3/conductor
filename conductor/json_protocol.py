@@ -1,7 +1,8 @@
 """JSON-based protocol for conductor communication.
 
-This module replaces pickle with a secure JSON protocol.
+This module replaces pickle with a JSON protocol transmitted in PLAIN TEXT.
 No backward compatibility with pickle is maintained.
+WARNING: No encryption - use only on private networks.
 """
 
 import json

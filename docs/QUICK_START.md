@@ -2,6 +2,8 @@
 
 Get up and running with Conductor in 5 minutes!
 
+⚠️ **SECURITY WARNING**: Conductor has NO encryption and NO authentication. Use ONLY on private test networks behind a firewall. DO NOT use over the internet!
+
 ## 1. Installation (30 seconds)
 
 ```bash
@@ -259,7 +261,7 @@ step3 = tar -czf /tmp/logs.tar.gz /var/log/myapp/
 ## Modern Features
 
 ### JSON Protocol
-Conductor uses a secure JSON protocol for communication:
+Conductor uses a JSON protocol (PLAIN TEXT - NO ENCRYPTION) for communication:
 - No arbitrary code execution risk (unlike pickle)
 - Human-readable messages for debugging
 - Protocol versioning for compatibility

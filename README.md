@@ -2,7 +2,6 @@
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-BSD-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
 
 Many test frameworks exist to test code on a single host or, across a
 network, on a single server.  Conductor is a distributed system test
@@ -14,7 +13,7 @@ the cooperation of several networked devices.
 ## Features ##
 
 - **Distributed Testing**: Coordinate tests across multiple networked machines
-- **Secure JSON Protocol**: Safe communication protocol replacing insecure pickle
+- **JSON Protocol**: Plain text protocol (NO ENCRYPTION) replacing insecure pickle
 - **Phase-based Execution**: Startup → Run → Collect → Reset workflow
 - **Parallel & Sequential Control**: Run steps in parallel or sequence as needed
 - **Command Types**: Normal, spawn (background), and timeout commands
@@ -32,10 +31,21 @@ the cooperation of several networked devices.
 
 ## Security ##
 
-Conductor uses a secure JSON protocol (v1) that addresses the security vulnerabilities of the previous pickle-based implementation:
+⚠️ **IMPORTANT SECURITY WARNING** ⚠️
 
-- **No Arbitrary Code Execution**: JSON cannot execute code, unlike pickle
-- **Protocol Versioning**: Ensures compatibility and security across versions
+**DO NOT USE CONDUCTOR OVER THE INTERNET**
+
+- **NO ENCRYPTION**: All network communications are sent in PLAIN TEXT
+- **NO AUTHENTICATION**: There is NO authentication mechanism - anyone who can connect can control the system
+- **PRIVATE NETWORKS ONLY**: This tool is designed for use in isolated test labs on private networks
+- **FIREWALL REQUIRED**: Always use behind a properly configured firewall
+
+### Design Security Features
+
+While not suitable for internet use, Conductor does include some security improvements over its predecessor:
+
+- **No Arbitrary Code Execution**: JSON protocol cannot execute code, unlike the previous pickle-based implementation
+- **Protocol Versioning**: Ensures compatibility across versions
 - **Message Size Limits**: 10MB maximum to prevent DoS attacks
 - **Human-Readable Format**: Easier to debug and audit communications
 
@@ -161,75 +171,68 @@ Once the test is complete the conduct script will exit and return the
 caller back to the shell prompt.  The player will continue to await
 commands from another run of the conduct script.
 
-## Commentary ##
+## How It Works ##
 
-A common use for Conductor is to test network devices, such as a
-router or firewall, that are connected to multiple senders and
-receivers.  Each of the senders, receivers, and the device under test
-(DUT) are a *Player*, and another system is designated as the *Conductor*.
+### Overview
 
-The players, read commands over a network channel, execute them and
-return results to the conductor.
+Conductor orchestrates distributed tests across multiple networked systems:
 
-The conductor reads test descriptions from a configuration file,
-written using Python's config parser, and executes the tests on the
-players.
+- **Conductor**: Central coordinator that controls the test
+- **Players**: Test nodes that execute commands
 
-The tests are executed in *Phases*.  A *Phase* contains a set of internal
-or external (shell/program) commands that are executed in order, per
-client.  The four Phases currently defined are:
+Common use case: Testing network devices (routers, firewalls) with multiple traffic generators and receivers.
 
-  * Startup
+### Test Phases
 
-The *Startup* phase is where commands that are required to set up each
-device are execute.  Examples include setting up network interfaces,
-routing tables, as well as creating directories to hold result files
-on the players.
+Tests execute in four sequential phases:
 
-  * Run
+1. **Startup** - Configure test environment
+   - Set up network interfaces
+   - Configure routing tables
+   - Create result directories
 
-The *Run* phase contains the commands that are the core of the test.  An
-example might be starting a number of transmitting and receiving
-programs to generate and sink traffic through the DUT.
+2. **Run** - Execute the main test
+   - Start traffic generators
+   - Launch monitoring tools
+   - Run test workloads
 
-  * Collect
+3. **Collect** - Gather results
+   - Retrieve log files
+   - Copy test data to conductor
+   - Save performance metrics
 
-In the *Collect* phase the Conductor sends commands to the Players to
-retrieve any data that was generated during the test, and places that
-data into a results directory on the Conductor, for later analysis.
+4. **Reset** - Clean up
+   - Restore original configuration
+   - Clean temporary files
+   - Return to pre-test state
 
-  * Reset
+### Execution Model
 
-The last phase is the *Reset* phase, where the Conductor instructs the
-Players to reset any configuration that might have been set in the
-Startup phase and which might influence later test runs.  It is the
-goal when writing Conductor tests that all the systems used in the
-test return to the state they were in prior to the Startup phase.
+Each phase executes in three steps:
 
-Each Phase has three parts.  The Conductor first downloads the Phase
-to the Player, but does not tell it to execute.  Downloading the Phase
-to each client allows the Conductor to start each Phase nearly
-simultaneously, although the fact that the Conductor itself serializes
-its communication among the clients means that there is a small amount
-of skew in when each Player is told to execute its steps.  
+1. **Download** - Conductor sends the phase to all players
+2. **Acknowledge** - Players confirm receipt and readiness
+3. **Execute** - Conductor triggers simultaneous execution
 
-Each phase is made up of several steps.  There are two, special,
-keywords for steps executed in the Run phase.
+This approach minimizes timing skew between players, though some small delay exists due to sequential communication.
 
-A *spawn* keyword (spawn:echo 30) will spawn the command as a
-sub-process and not wait for it to execute, nor collect the program's
-return value.  The spawn keyword is best used to start several
-programs simultaneously, such as multiple network streams when testing
-a piece of networking equipment.
+### Command Execution
 
-A *timeout* keyword (timeout10:sleep 30) will execute the command with
-a timeout.  The timeout is the number directly after the keyword and
-is expressed in seconds.  A command executed with a timeout will be
-interrupted by its parent if it doesn't exit before the timeout
-expires.  In the example above the sleep command will try to sleep for
-30 seconds but then be interrupted after 10 seconds.  The timeout
-keyword is useful for programs that want to run forever or which wait
-for human input unnecessarily.
+Commands within a phase run sequentially on each player. Use special prefixes to control execution behavior:
+
+**spawn:** - Run command in background without waiting
+```bash
+spawn:iperf3 -s                    # Start server, continue immediately
+spawn:tcpdump -w capture.pcap      # Start capture in background
+```
+Use for: Long-running processes, traffic generators, monitoring tools
+
+**timeout<N>:** - Kill command after N seconds
+```bash
+timeout10:ping -c 1000 target      # Stop ping after 10 seconds
+timeout30:./long_test.sh           # Limit test to 30 seconds
+```
+Use for: Commands that might hang, tests with time limits, safety boundaries
 
 ## Contributing
 
@@ -243,6 +246,3 @@ We welcome contributions to Conductor! Please see our [Contributing Guide](docs/
 
 For quick testing, see [Quick Start Guide](docs/QUICK_START.md) and [Installation Guide](docs/INSTALLATION_GUIDE.md).
 
-## Support
-
-This work supported by: Rubicon Communications, LLC (Netgate)

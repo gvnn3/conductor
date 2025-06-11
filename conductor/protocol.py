@@ -1,7 +1,8 @@
 """JSON-based protocol for conductor communication.
 
-This module provides secure JSON-based network communication
+This module provides JSON-based network communication (PLAIN TEXT)
 between conductor and players.
+WARNING: No encryption - use only on private networks.
 """
 
 import json
