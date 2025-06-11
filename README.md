@@ -254,6 +254,3 @@ We welcome contributions to Conductor! Please see our [Contributing Guide](docs/
 
 For quick testing, see [Quick Start Guide](docs/QUICK_START.md) and [Installation Guide](docs/INSTALLATION_GUIDE.md).
 
-## Support
-
-This work supported by: Rubicon Communications, LLC (Netgate)
