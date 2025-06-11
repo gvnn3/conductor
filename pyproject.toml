@@ -1,0 +1,74 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "conductor"
+version = "0.0.1"
+description = "A framework for distributed testing"
+readme = "README.md"
+requires-python = ">=3.8"
+license = "BSD-3-Clause"
+keywords = ["networking", "testing"]
+authors = [
+    {name = "George V. Neville-Neil", email = "gnn@neville-neil.com"},
+]
+maintainers = [
+    {name = "George V. Neville-Neil", email = "gnn@neville-neil.com"},
+]
+dependencies = []
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Testing",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+[project.urls]
+Homepage = "https://github.com/gvnn3/conductor"
+Repository = "https://github.com/gvnn3/conductor"
+Issues = "https://github.com/gvnn3/conductor/issues"
+
+[project.scripts]
+conduct = "conductor.scripts.conduct:main"
+player = "conductor.scripts.player:main"
+
+[tool.setuptools]
+packages = ["conductor", "conductor.scripts"]
+
+[tool.setuptools.package-data]
+conductor = ["*.cfg"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "pytest-cov",
+    "pytest-mock",
+    "hypothesis",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v"
+
+[tool.coverage.run]
+source = ["conductor"]
+omit = ["*/tests/*", "*/test_*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]

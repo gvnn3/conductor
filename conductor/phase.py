@@ -12,8 +12,8 @@
 # notice, this list of conditions and the following disclaimer in the
 # documentation and/or other materials provided with the distribution.
 #
-# Neither the name of Neville-Neil Consulting nor the names of its 
-# contributors may be used to endorse or promote products derived from 
+# Neither the name of Neville-Neil Consulting nor the names of its
+# contributors may be used to endorse or promote products derived from
 # this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
@@ -37,7 +37,8 @@ import socket
 
 from conductor import retval
 
-class Phase():
+
+class Phase:
     """Each Phase contains one, or more, steps."""
 
     def __init__(self, resulthost, resultport):
@@ -45,10 +46,6 @@ class Phase():
         self.resultport = resultport
         self.steps = []
         self.results = []
-        
-    def load(self):
-        """Load a set of Steps into the list to be run"""
-        pass
 
     def append(self, step):
         self.steps.append(step)
@@ -62,13 +59,10 @@ class Phase():
     def return_results(self):
         """Return the results of the steps"""
         for result in self.results:
-            ressock = socket.create_connection((self.resulthost,
-                                                    self.resultport))
+            ressock = socket.create_connection((self.resulthost, self.resultport))
             result.send(ressock)
             ressock.close()
-        ressock = socket.create_connection((self.resulthost,
-                                            self.resultport))
+        ressock = socket.create_connection((self.resulthost, self.resultport))
         ret = retval.RetVal(retval.RETVAL_DONE, "phases complete")
         ret.send(ressock)
         ressock.close()
-        
