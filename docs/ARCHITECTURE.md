@@ -140,7 +140,7 @@ conductor/
 
 ### JSON Protocol (v1)
 
-The conductor uses a secure JSON-based protocol replacing the previous pickle implementation:
+The conductor uses a JSON-based protocol (transmitted in PLAIN TEXT) replacing the previous pickle implementation:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐

@@ -55,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Phase aliases (startup, run, collect, reset) for backward compatibility
 
 ### Changed
-- Replaced pickle protocol with secure JSON protocol
+- Replaced pickle protocol with JSON protocol (plain text)
 - Updated minimum Python version to 3.8
 - Migrated from setup.py to pyproject.toml
 - Improved error messages for invalid ports

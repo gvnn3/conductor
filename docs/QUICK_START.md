@@ -261,7 +261,7 @@ step3 = tar -czf /tmp/logs.tar.gz /var/log/myapp/
 ## Modern Features
 
 ### JSON Protocol
-Conductor uses a secure JSON protocol for communication:
+Conductor uses a JSON protocol (PLAIN TEXT - NO ENCRYPTION) for communication:
 - No arbitrary code execution risk (unlike pickle)
 - Human-readable messages for debugging
 - Protocol versioning for compatibility

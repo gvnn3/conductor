@@ -13,7 +13,7 @@ the cooperation of several networked devices.
 ## Features ##
 
 - **Distributed Testing**: Coordinate tests across multiple networked machines
-- **Secure JSON Protocol**: Safe communication protocol replacing insecure pickle
+- **JSON Protocol**: Plain text protocol (NO ENCRYPTION) replacing insecure pickle
 - **Phase-based Execution**: Startup → Run → Collect → Reset workflow
 - **Parallel & Sequential Control**: Run steps in parallel or sequence as needed
 - **Command Types**: Normal, spawn (background), and timeout commands

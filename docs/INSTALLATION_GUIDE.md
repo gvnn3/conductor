@@ -51,7 +51,7 @@ Conductor is a distributed testing framework that follows a coordinator-worker p
 Conductor has no external dependencies! It uses only Python standard library modules.
 
 ### Security Note
-Conductor uses a secure JSON protocol (v1) for communication between nodes, replacing the older pickle-based protocol. This provides:
+Conductor uses a JSON protocol (v1) transmitted in PLAIN TEXT for communication between nodes, replacing the older pickle-based protocol. This provides:
 - Protection against arbitrary code execution
 - Human-readable message format for debugging
 - Language-agnostic protocol for future extensibility
